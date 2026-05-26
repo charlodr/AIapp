@@ -276,7 +276,7 @@ def build_system_prompt(language: str, track: str | None,
         "programme, schedule, timings, coffee break, lunch break, venue, location, "
         "logistics, organizing committee, scientific committee, keynotes, sessions, "
         "tracks, best paper awards, registration, opening, closing, round table. "
-        "Use ConferenceDay.pdf for all schedule, timing and venue questions. "
+        "Use ConferenceDay.pdf for all schedule, timing, timetable, cronoprogram and venue questions. The schedule is labelled CRONOPROGRAM in the document. "
         "ALL of the following are valid topics: "
         "AI, LLM, RAG, NLP, BIM, HBIM, generative design, parametric design, digital twin, "
         "heritage conservation, digital heritage, photogrammetry, education, pedagogy, "
