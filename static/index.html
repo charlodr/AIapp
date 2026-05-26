@@ -187,6 +187,7 @@ const KEYWORDS = {
 
 let track = 'all', loading = false;
 const sid = 's' + Math.random().toString(36).slice(2, 9);
+let userLang = 'en'; // updated when user sends a message
 
 // Build keyword tags
 function buildKeywords() {
@@ -246,8 +247,8 @@ const TRACK_DESCRIPTIONS = {
 };
 
 function detectLang() {
-  // Simple detection based on browser language
-  return navigator.language && navigator.language.startsWith('it') ? 'it' : 'en';
+  // Default to English — Italian only if user has written in Italian
+  return userLang || 'en';
 }
 
 function selTrack(t, btn) {
@@ -349,6 +350,8 @@ async function sendMessage() {
     hideTyping();
     addMsg('bot', formatText(data.answer || 'No response.'));
     if (data.track && data.track !== track) track = data.track;
+    // Update language based on what the server detected
+    if (data.language) userLang = data.language;
   } catch(e) {
     hideTyping();
     addMsg('bot', 'Connection error. Please try again.');
