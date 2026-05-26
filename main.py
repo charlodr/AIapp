@@ -290,31 +290,58 @@ def build_system_prompt(language: str, track: str | None,
     )
 
 
-def _call_vertex(query_text: str, query_turns: list, preamble: str, token: str) -> dict:
-    """Single call to Vertex AI Discovery Engine."""
+def query_vertex_ai(user_message: str, history: list, language: str,
+                    track: str | None,
+                    contribution_ref: str | None) -> tuple[str, str | None]:
+    token = get_gcp_token()
+
+    # Translate Italian queries to English for better RAG matching
+    query_text = (
+        translate_query_to_english(user_message)
+        if detect_language(user_message) == "it"
+        else user_message
+    )
+
+    # Enrich short/vague queries with track context
+    if track and len(query_text.split()) <= 5:
+        track_name = TRACKS[track]["name_en"]
+        query_text = f"{query_text} in Track {track} ({track_name})"
+
+    query_turns = [
+        {
+            "userInput": {"query": {"text": t["user"]}},
+            "reply": {"summary": {"summaryText": t["assistant"]}}
+        }
+        for t in history[-MAX_HISTORY:]
+    ]
+
     payload = {
         "query": {"text": query_text},
         "answerGenerationSpec": {
             "modelSpec":        {"modelVersion": "stable"},
-            "promptSpec":       {"preamble": preamble},
+            "promptSpec":       {"preamble": build_system_prompt(language, track, contribution_ref)},
             "includeCitations": True
         }
     }
+
     if query_turns:
         payload["conversationContext"] = {"queryHistory": query_turns}
-    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type":  "application/json"
+    }
+
     resp = requests.post(DISCOVERY_ENGINE_URL, headers=headers, json=payload, timeout=30)
     resp.raise_for_status()
-    return resp.json()
+    data = resp.json()
 
-
-def extract_answer_and_track(data: dict) -> tuple[str, str | None]:
-    """Extract answer text and detected track from Vertex AI response."""
     try:
         answer = data["answer"]["answerText"].strip()
     except (KeyError, TypeError):
         return "OUT_OF_SCOPE", None
 
+    # Detect source track from document URIs
     detected_track = None
     try:
         for ref in data["answer"].get("references", []):
@@ -327,53 +354,6 @@ def extract_answer_and_track(data: dict) -> tuple[str, str | None]:
                 break
     except Exception:
         pass
-
-    return answer, detected_track
-
-
-def query_vertex_ai(user_message: str, history: list, language: str,
-                    track: str | None,
-                    contribution_ref: str | None) -> tuple[str, str | None]:
-    token = get_gcp_token()
-    preamble = build_system_prompt(language, track, contribution_ref)
-
-    query_turns = [
-        {
-            "userInput": {"query": {"text": t["user"]}},
-            "reply": {"summary": {"summaryText": t["assistant"]}}
-        }
-        for t in history[-MAX_HISTORY:]
-    ]
-
-    # Translate Italian queries to English for better RAG matching
-    query_text = (
-        translate_query_to_english(user_message)
-        if detect_language(user_message) == "it"
-        else user_message
-    )
-
-    # First attempt
-    data = _call_vertex(query_text, query_turns, preamble, token)
-    answer, detected_track = extract_answer_and_track(data)
-
-    # If OUT_OF_SCOPE, retry with broader query (remove track filter)
-    if "OUT_OF_SCOPE" in answer.upper() and track:
-        broad_preamble = build_system_prompt(language, None, contribution_ref)
-        data2 = _call_vertex(query_text, query_turns, broad_preamble, token)
-        answer2, detected_track2 = extract_answer_and_track(data2)
-        if "OUT_OF_SCOPE" not in answer2.upper():
-            return answer2, detected_track2
-
-    # If still OUT_OF_SCOPE, retry with simplified query (first 5 words)
-    if "OUT_OF_SCOPE" in answer.upper():
-        words = query_text.split()
-        if len(words) > 3:
-            simple_query = " ".join(words[:5])
-            broad_preamble = build_system_prompt(language, None, None)
-            data3 = _call_vertex(simple_query, [], broad_preamble, token)
-            answer3, detected_track3 = extract_answer_and_track(data3)
-            if "OUT_OF_SCOPE" not in answer3.upper():
-                return answer3, detected_track3
 
     return answer, detected_track
 
