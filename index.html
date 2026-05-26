@@ -126,7 +126,7 @@ function selTrack(t, btn) {
   document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (t !== 'all') {
-    addMsg('bot', '<span class="badge">TRACK ' + t + '</span><br><strong>' + TRACKS[t] + '</strong><br><br>Ask me anything about the contributions in this track.');
+    addMsg('bot', '<span class="badge">TRACK ' + t + '</span> <strong>' + TRACKS[t] + '</strong><br><br>You are now browsing Track ' + t + '. Ask me anything, for example:<br>2022 <em>What papers are in this track?</em><br>2022 <em>Tell me about a specific author</em><br>2022 <em>What topics are covered?</em>');
   }
 }
 
