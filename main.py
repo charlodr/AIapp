@@ -236,7 +236,6 @@ def build_system_prompt(language: str, track: str | None,
             contrib_ctx = f"Concentrati specificamente sul contributo relativo a: '{contribution_ref}'. "
 
     if language == "en":
-    if language == "en":
         return (
             "You are the official assistant for the \u2200ISION_E conference on AI in architecture. "
             "Answer ANY question related to the conference: contributions, papers, speakers, "
