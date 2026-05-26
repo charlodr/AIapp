@@ -310,12 +310,12 @@ def query_vertex_ai(user_message: str, history: list, language: str,
                     contribution_ref: str | None) -> tuple[str, str | None]:
     token = get_gcp_token()
 
+    # Normalize query: lowercase and remove trailing punctuation
+    import string
+    normalized = user_message.strip().rstrip(string.punctuation).lower()
+
     # Translate Italian queries to English for better RAG matching
-    query_text = (
-        translate_query_to_english(user_message)
-        if detect_language(user_message) == "it"
-        else user_message
-    )
+    query_text = translate_query_to_english(normalized)
 
     # Enrich short/vague queries with track context
     if track and len(query_text.split()) <= 5:
