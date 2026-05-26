@@ -213,9 +213,24 @@ def guess_track_from_keywords(text: str) -> str | None:
 
 
 def translate_query_to_english(text: str) -> str:
-    """Translate common Italian conference terms to English for better RAG matching."""
+    """Translate common Italian conference terms to English and fix common typos."""
     lower = text.lower()
     translated = lower
+    # Fix common typos
+    typo_fixes = {
+        "coffe break": "coffee break",
+        "coffe": "coffee",
+        "shcedule": "schedule",
+        "schdule": "schedule",
+        "venu ": "venue ",
+        "keynot ": "keynote ",
+        "committe": "committee",
+        "comitee": "committee",
+        "organiz": "organiz",
+    }
+    for typo, fix in typo_fixes.items():
+        if typo in translated:
+            translated = translated.replace(typo, fix)
     it_to_en = {
         "pausa caffe": "coffee break",
         "pausa caff\u00e8": "coffee break",
@@ -306,6 +321,10 @@ def query_vertex_ai(user_message: str, history: list, language: str,
     if track and len(query_text.split()) <= 5:
         track_name = TRACKS[track]["name_en"]
         query_text = f"{query_text} in Track {track} ({track_name})"
+
+    # For very short queries (1-2 words), add conference context
+    if len(query_text.split()) <= 2:
+        query_text = f"conference {query_text} VISION_E schedule programme venue"
 
     query_turns = [
         {
