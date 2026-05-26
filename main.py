@@ -212,105 +212,109 @@ def guess_track_from_keywords(text: str) -> str | None:
     return None
 
 
+def translate_query_to_english(text: str) -> str:
+    """Translate common Italian conference terms to English for better RAG matching."""
+    lower = text.lower()
+    translated = lower
+    it_to_en = {
+        "pausa caffe": "coffee break",
+        "pausa caff\u00e8": "coffee break",
+        "caff\u00e8": "coffee break",
+        "caffe": "coffee break",
+        "pausa pranzo": "lunch break",
+        "pranzo": "lunch",
+        "apertura": "opening ceremony",
+        "chiusura": "closing",
+        "sede": "venue",
+        "orari": "schedule timings",
+        "programma": "programme schedule",
+        "relatori": "speakers",
+        "contributi": "contributions papers",
+        "tavola rotonda": "round table",
+        "premi": "awards",
+        "registrazione": "registration",
+        "keynote": "keynote",
+        "sessione": "session",
+        "track": "track",
+        "patrimonio": "heritage",
+        "conservazione": "conservation",
+        "rappresentazione": "representation",
+        "progettazione": "design",
+        "educazione": "education",
+        "apprendimento": "learning",
+        "conferenza": "conference",
+    }
+    for it_term, en_term in it_to_en.items():
+        if it_term in translated:
+            translated = translated.replace(it_term, en_term)
+    return translated
+
 def build_system_prompt(language: str, track: str | None,
                         contribution_ref: str | None) -> str:
+    """Always returns English prompt — documents are in English.
+    Language param only controls the response language instruction."""
     track_ctx = ""
     if track:
-        name = TRACKS[track]["name_en"] if language == "en" else TRACKS[track]["name_it"]
-        if language == "en":
-            track_ctx = (
-                f"The user is focused on Track {track}: {name}. "
-                f"Prioritise documents with 'track{track}_' in the filename. "
-            )
-        else:
-            track_ctx = (
-                f"L'utente è interessato al Track {track}: {name}. "
-                f"Dai priorità ai documenti con 'track{track}_' nel nome. "
-            )
+        name = TRACKS[track]["name_en"]
+        track_ctx = (
+            f"The user is focused on Track {track}: {name}. "
+            f"Prioritise documents with 'track{track}_' in the filename. "
+        )
 
     contrib_ctx = ""
     if contribution_ref:
-        if language == "en":
-            contrib_ctx = f"Focus specifically on the contribution related to: '{contribution_ref}'. "
-        else:
-            contrib_ctx = f"Concentrati specificamente sul contributo relativo a: '{contribution_ref}'. "
+        contrib_ctx = f"Focus specifically on the contribution related to: '{contribution_ref}'. "
 
-    if language == "en":
-        return (
-            "You are the official assistant for the \u2200ISION_E conference on AI in architecture. "
-            "Answer ANY question related to the conference: contributions, papers, speakers, "
-            "programme, schedule, timings, coffee break, lunch break, venue, location, "
-            "logistics, organizing committee, scientific committee, keynotes, sessions, "
-            "tracks, best paper awards, registration, opening, closing, round table. "
-            "Use ConferenceDay.pdf for all schedule, timing and venue questions. "
-            "ALL of the following are also valid topics: "
-            "AI, LLM, RAG, NLP, BIM, HBIM, generative design, parametric design, digital twin, "
-            "heritage conservation, digital heritage, photogrammetry, education, pedagogy, "
-            "human-AI collaboration, diffusion models, neural networks, GANs, NeRF, XR, "
-            "computational creativity, morphological analysis, scan-to-BIM, learning analytics. "
-            f"{track_ctx}{contrib_ctx}"
-            "When listing contributions include title and author when available. "
-            "Only reply OUT_OF_SCOPE for questions completely unrelated to the conference. "
-            "Be thorough, clear and helpful."
-        )
-    else:
-        return (
-            "Sei l'assistente ufficiale della conferenza \u2200ISION_E sull'AI in architettura. "
-            "Rispondi a QUALSIASI domanda sulla conferenza: contributi, paper, relatori, "
-            "programma, orari, coffee break, pausa pranzo, sede, logistica, "
-            "comitato organizzatore, comitato scientifico, keynote, sessioni, track, premi. "
-            "Usa ConferenceDay.pdf per tutte le domande su orari, pause e sede. "
-            "Sono anche validi questi argomenti: "
-            "AI, LLM, RAG, NLP, BIM, HBIM, design generativo, design parametrico, digital twin, "
-            "conservazione del patrimonio, heritage digitale, fotogrammetria, educazione, pedagogia, "
-            "collaborazione uomo-AI, modelli diffusivi, reti neurali, GAN, NeRF, XR, "
-            "creativita computazionale, analisi morfologica, scan-to-BIM, learning analytics. "
-            f"{track_ctx}{contrib_ctx}"
-            "Quando elenchi i contributi includi titolo e autore quando disponibili. "
-            "Rispondi OUT_OF_SCOPE solo se la domanda non ha nulla a che fare con la conferenza. "
-            "Sii esauriente, chiaro e utile."
-        )
+    lang_instruction = (
+        "Reply in Italian." if language == "it"
+        else "Reply in English."
+    )
 
-def query_vertex_ai(user_message: str, history: list, language: str,
-                    track: str | None,
-                    contribution_ref: str | None) -> tuple[str, str | None]:
-    token = get_gcp_token()
+    return (
+        "You are the official assistant for the VISION_E conference on AI in architecture. "
+        "Answer ANY question related to the conference: contributions, papers, speakers, "
+        "programme, schedule, timings, coffee break, lunch break, venue, location, "
+        "logistics, organizing committee, scientific committee, keynotes, sessions, "
+        "tracks, best paper awards, registration, opening, closing, round table. "
+        "Use ConferenceDay.pdf for all schedule, timing and venue questions. "
+        "ALL of the following are valid topics: "
+        "AI, LLM, RAG, NLP, BIM, HBIM, generative design, parametric design, digital twin, "
+        "heritage conservation, digital heritage, photogrammetry, education, pedagogy, "
+        "human-AI collaboration, diffusion models, neural networks, GANs, NeRF, XR, "
+        "computational creativity, morphological analysis, scan-to-BIM, learning analytics, "
+        "coffee break, lunch, venue, schedule, awards, keynote, round table. "
+        f"{track_ctx}{contrib_ctx}"
+        "When listing contributions include title and author when available. "
+        "Only reply OUT_OF_SCOPE for questions completely unrelated to the conference. "
+        f"Be thorough, clear and helpful. {lang_instruction}"
+    )
 
-    query_turns = [
-        {
-            "userInput": {"query": {"text": t["user"]}},
-            "reply": {"summary": {"summaryText": t["assistant"]}}
-        }
-        for t in history[-MAX_HISTORY:]
-    ]
 
+def _call_vertex(query_text: str, query_turns: list, preamble: str, token: str) -> dict:
+    """Single call to Vertex AI Discovery Engine."""
     payload = {
-        "query": {"text": user_message},
+        "query": {"text": query_text},
         "answerGenerationSpec": {
             "modelSpec":        {"modelVersion": "stable"},
-            "promptSpec":       {"preamble": build_system_prompt(language, track, contribution_ref)},
+            "promptSpec":       {"preamble": preamble},
             "includeCitations": True
         }
     }
-
     if query_turns:
         payload["conversationContext"] = {"queryHistory": query_turns}
-
-    headers = {
-        "Authorization": f"Bearer {token}",
-        "Content-Type":  "application/json"
-    }
-
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
     resp = requests.post(DISCOVERY_ENGINE_URL, headers=headers, json=payload, timeout=30)
     resp.raise_for_status()
-    data = resp.json()
+    return resp.json()
 
+
+def extract_answer_and_track(data: dict) -> tuple[str, str | None]:
+    """Extract answer text and detected track from Vertex AI response."""
     try:
         answer = data["answer"]["answerText"].strip()
     except (KeyError, TypeError):
         return "OUT_OF_SCOPE", None
 
-    # Detect source track from document URIs
     detected_track = None
     try:
         for ref in data["answer"].get("references", []):
@@ -323,6 +327,53 @@ def query_vertex_ai(user_message: str, history: list, language: str,
                 break
     except Exception:
         pass
+
+    return answer, detected_track
+
+
+def query_vertex_ai(user_message: str, history: list, language: str,
+                    track: str | None,
+                    contribution_ref: str | None) -> tuple[str, str | None]:
+    token = get_gcp_token()
+    preamble = build_system_prompt(language, track, contribution_ref)
+
+    query_turns = [
+        {
+            "userInput": {"query": {"text": t["user"]}},
+            "reply": {"summary": {"summaryText": t["assistant"]}}
+        }
+        for t in history[-MAX_HISTORY:]
+    ]
+
+    # Translate Italian queries to English for better RAG matching
+    query_text = (
+        translate_query_to_english(user_message)
+        if detect_language(user_message) == "it"
+        else user_message
+    )
+
+    # First attempt
+    data = _call_vertex(query_text, query_turns, preamble, token)
+    answer, detected_track = extract_answer_and_track(data)
+
+    # If OUT_OF_SCOPE, retry with broader query (remove track filter)
+    if "OUT_OF_SCOPE" in answer.upper() and track:
+        broad_preamble = build_system_prompt(language, None, contribution_ref)
+        data2 = _call_vertex(query_text, query_turns, broad_preamble, token)
+        answer2, detected_track2 = extract_answer_and_track(data2)
+        if "OUT_OF_SCOPE" not in answer2.upper():
+            return answer2, detected_track2
+
+    # If still OUT_OF_SCOPE, retry with simplified query (first 5 words)
+    if "OUT_OF_SCOPE" in answer.upper():
+        words = query_text.split()
+        if len(words) > 3:
+            simple_query = " ".join(words[:5])
+            broad_preamble = build_system_prompt(language, None, None)
+            data3 = _call_vertex(simple_query, [], broad_preamble, token)
+            answer3, detected_track3 = extract_answer_and_track(data3)
+            if "OUT_OF_SCOPE" not in answer3.upper():
+                return answer3, detected_track3
 
     return answer, detected_track
 
