@@ -413,7 +413,7 @@ def web_chat():
     except Exception as e:
         app.logger.error(f"Vertex AI error: {e}")
         reply = FALLBACK_IT if language == "it" else FALLBACK_EN
-        return jsonify({"answer": reply, "track": state["track"]}), 200
+        return jsonify({"answer": reply, "track": state["track"], "language": language}), 200
 
     # Handle out of scope
     if "OUT_OF_SCOPE" in answer.upper():
@@ -440,7 +440,7 @@ def web_chat():
     state["history"].append({"user": user_message, "assistant": reply})
     state["history"] = state["history"][-MAX_HISTORY:]
 
-    return jsonify({"answer": reply, "track": state["track"]})
+    return jsonify({"answer": reply, "track": state["track"], "language": language})
 
 
 @app.route("/chat/reset", methods=["POST"])
