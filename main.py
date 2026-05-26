@@ -170,17 +170,12 @@ def detect_language(text: str) -> str:
 
 
 def detect_track_selection(text: str) -> str | None:
-    clean = text.strip()
-    if clean in ("1", "2", "3"):
-        return clean
-    m = re.search(r'\btrack\s*([123])\b', clean.lower())
-    if m:
-        return m.group(1)
-    # Check for word numbers
-    mapping = {"one": "1", "uno": "1", "two": "2", "due": "2", "three": "3", "tre": "3"}
-    for word, num in mapping.items():
-        if re.search(rf'\b{word}\b', clean.lower()):
-            return num
+    """Only intercept very short, direct track selection messages."""
+    clean = text.strip().lower()
+    if clean in ("1", "2", "3",
+                 "track 1", "track 2", "track 3",
+                 "track1", "track2", "track3"):
+        return clean[-1]
     return None
 
 
