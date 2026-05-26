@@ -376,9 +376,12 @@ def web_chat():
     state    = get_state(session_id)
     language = detect_language(user_message)
 
-    # Override track from UI selection
+    # UI track selection always takes priority
     if track_req in ("1", "2", "3"):
         state["track"] = track_req
+    elif track_req is None and state["track"]:
+        # Keep existing track if UI is on "All Tracks" but session has a track
+        pass
 
     # Detect explicit track selection in message
     selected = detect_track_selection(user_message)
