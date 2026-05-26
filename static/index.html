@@ -75,6 +75,8 @@ header{position:relative;z-index:10;padding:14px 20px;border-bottom:1px solid va
 .qbtn:hover{border-color:var(--accent);color:var(--accent2);background:rgba(124,106,247,.08);}
 .reset-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-family:'Space Mono',monospace;margin-left:8px;transition:all .2s;}
 .reset-btn:hover{border-color:var(--accent);color:var(--accent2);}
+.inline-btn{background:none;border:1px solid var(--border);color:var(--accent2);padding:3px 10px;border-radius:12px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin:2px 0;transition:all .2s;}
+.inline-btn:hover{background:rgba(124,106,247,.1);border-color:var(--accent);}
 </style>
 </head>
 <body>
@@ -231,10 +233,10 @@ function selTrack(t, btn) {
   if (t !== 'all') {
     addMsg('bot',
       '<span class="badge">TRACK ' + t + '</span> <strong>' + TRACKS[t] + '</strong><br><br>' +
-      'You are now browsing Track ' + t + '. Ask me anything, for example:<br>' +
-      '&bull; <em>What papers are in this track?</em><br>' +
-      '&bull; <em>Tell me about a specific author</em><br>' +
-      '&bull; <em>What topics are covered?</em>'
+      'You are now browsing Track ' + t + '. Try asking:<br>' +
+      '&bull; <button class="inline-btn" onclick="quickAsk(\'What are all the papers in Track ' + t + '?\')">List all papers in Track ' + t + '</button><br>' +
+      '&bull; <button class="inline-btn" onclick="quickAsk(\'What topics does Track ' + t + ' cover?\')">What topics does this track cover?</button><br>' +
+      '&bull; Or type an author name or keyword'
     );
   }
 }
