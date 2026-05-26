@@ -14,11 +14,31 @@ header{position:relative;z-index:10;padding:14px 20px;border-bottom:1px solid va
 .logo{font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--accent2);}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok);animation:pulse 2s infinite;margin-left:auto;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
-.track-bar{position:relative;z-index:10;padding:10px 20px;border-bottom:1px solid var(--border);display:flex;gap:6px;background:rgba(10,10,15,.7);overflow-x:auto;}
+.track-bar{position:relative;z-index:10;padding:10px 20px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;background:rgba(10,10,15,.7);overflow-x:auto;}
 .track-bar::-webkit-scrollbar{height:0;}
 .tbtn{padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-family:'Space Mono',monospace;cursor:pointer;transition:all .2s;white-space:nowrap;}
 .tbtn:hover{border-color:var(--accent);color:var(--accent2);}
 .tbtn.active{background:rgba(124,106,247,.15);border-color:var(--accent);color:var(--accent2);}
+
+/* Keywords button and panel */
+.kw-wrapper{position:relative;margin-left:auto;flex-shrink:0;}
+.kw-btn{padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-family:'Space Mono',monospace;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;}
+.kw-btn:hover,.kw-btn.open{border-color:var(--accent);color:var(--accent2);background:rgba(124,106,247,.1);}
+.kw-btn .arrow{transition:transform .2s;font-size:8px;}
+.kw-btn.open .arrow{transform:rotate(180deg);}
+.kw-panel{display:none;position:absolute;top:calc(100% + 8px);right:0;width:520px;max-width:90vw;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;z-index:100;box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.kw-panel.open{display:block;}
+.kw-section{margin-bottom:12px;}
+.kw-section:last-child{margin-bottom:0;}
+.kw-section-title{font-size:9px;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.kw-tags{display:flex;flex-wrap:wrap;gap:5px;}
+.kw-tag{padding:3px 9px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:11px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
+.kw-tag:hover{border-color:var(--accent);color:var(--accent2);background:rgba(124,106,247,.08);}
+.kw-tag.t1{border-color:rgba(124,106,247,.3);}
+.kw-tag.t2{border-color:rgba(74,222,128,.2);}
+.kw-tag.t3{border-color:rgba(251,191,36,.2);}
+.kw-tag.common{border-color:rgba(148,163,184,.2);}
+
 #msgs{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;position:relative;z-index:1;}
 #msgs::-webkit-scrollbar{width:3px;}
 #msgs::-webkit-scrollbar-thumb{background:var(--border);}
@@ -71,7 +91,33 @@ header{position:relative;z-index:10;padding:14px 20px;border-bottom:1px solid va
   <button class="tbtn" onclick="selTrack('1',this)">T1 &middot; Representation &amp; Design</button>
   <button class="tbtn" onclick="selTrack('2',this)">T2 &middot; Heritage Conservation</button>
   <button class="tbtn" onclick="selTrack('3',this)">T3 &middot; Education &amp; Learning</button>
+
+  <!-- Keywords dropdown -->
+  <div class="kw-wrapper">
+    <button class="kw-btn" id="kwBtn" onclick="toggleKeywords()">
+      &#35; Keywords <span class="arrow">&#9660;</span>
+    </button>
+    <div class="kw-panel" id="kwPanel">
+      <div class="kw-section">
+        <div class="kw-section-title">&#9656; Common — All Tracks</div>
+        <div class="kw-tags" id="kwCommon"></div>
+      </div>
+      <div class="kw-section">
+        <div class="kw-section-title" style="color:rgba(124,106,247,.8)">&#9656; Track 1 — Representation &amp; Design</div>
+        <div class="kw-tags" id="kwT1"></div>
+      </div>
+      <div class="kw-section">
+        <div class="kw-section-title" style="color:rgba(74,222,128,.6)">&#9656; Track 2 — Heritage Conservation</div>
+        <div class="kw-tags" id="kwT2"></div>
+      </div>
+      <div class="kw-section">
+        <div class="kw-section-title" style="color:rgba(251,191,36,.6)">&#9656; Track 3 — Education &amp; Learning</div>
+        <div class="kw-tags" id="kwT3"></div>
+      </div>
+    </div>
+  </div>
 </div>
+
 <div id="msgs">
   <div class="welcome" id="welcome">
     <div class="wtitle">&#8704;ISION_E</div>
@@ -82,8 +128,6 @@ header{position:relative;z-index:10;padding:14px 20px;border-bottom:1px solid va
       <button class="qbtn" onclick="quickAsk('What are the papers in Track 3?')">Track 3 papers</button>
       <button class="qbtn" onclick="quickAsk('What is the conference schedule?')">Schedule</button>
       <button class="qbtn" onclick="quickAsk('Where is the event taking place?')">Venue</button>
-      <button class="qbtn" onclick="quickAsk('Tell me about contributions on LLM')">LLM contributions</button>
-      <button class="qbtn" onclick="quickAsk('Tell me about contributions on BIM')">BIM contributions</button>
     </div>
   </div>
 </div>
@@ -99,11 +143,70 @@ const TRACKS = {
   '2': 'AI for Heritage Conservation and Enhancement',
   '3': 'AI for Education and Learning'
 };
+
+const KEYWORDS = {
+  common: [
+    'LLM','RAG','NLP','Generative AI','Diffusion Models','Digital Twin',
+    'Neural Networks','GANs','NeRF','XR','Extended Reality','AI Ethics',
+    'Human-AI Collaboration','Multimodal AI','Data-driven','Fine-tuning'
+  ],
+  t1: [
+    'BIM','Parametric Design','Generative Design','Computational Creativity',
+    'Morphological Analysis','Style Transfer','Form-finding','Architectural Design',
+    'Urban Design','Sustainable Design','Virtual Prototyping','Shared Authorship'
+  ],
+  t2: [
+    'Digital Heritage','Photogrammetry','Scan-to-BIM','HBIM','Digital Survey',
+    'Heritage Conservation','Digital Restoration','Laser Scanning',
+    'Museum Studies','Linked Open Data','Predictive Conservation'
+  ],
+  t3: [
+    'Design Education','Pedagogy','Adaptive Learning','Gamification',
+    'Immersive Learning','Learning Analytics','Intelligent Tutoring',
+    'Student Modeling','Academic Integrity','Collaborative Virtual Environments'
+  ]
+};
+
 let track = 'all';
 let loading = false;
 const sid = 's' + Math.random().toString(36).slice(2, 9);
 
-// Input handlers
+// Build keyword tags
+function buildKeywords() {
+  const fill = (id, kws, cls) => {
+    const el = document.getElementById(id);
+    el.innerHTML = kws.map(k =>
+      `<button class="kw-tag ${cls}" onclick="searchKeyword('${k}')">${k}</button>`
+    ).join('');
+  };
+  fill('kwCommon', KEYWORDS.common, 'common');
+  fill('kwT1', KEYWORDS.t1, 't1');
+  fill('kwT2', KEYWORDS.t2, 't2');
+  fill('kwT3', KEYWORDS.t3, 't3');
+}
+buildKeywords();
+
+function toggleKeywords() {
+  const btn = document.getElementById('kwBtn');
+  const panel = document.getElementById('kwPanel');
+  btn.classList.toggle('open');
+  panel.classList.toggle('open');
+}
+
+function searchKeyword(kw) {
+  toggleKeywords();
+  quickAsk('What are the contributions related to ' + kw + '?');
+}
+
+// Close keywords panel when clicking outside
+document.addEventListener('click', function(e) {
+  const wrapper = document.querySelector('.kw-wrapper');
+  if (wrapper && !wrapper.contains(e.target)) {
+    document.getElementById('kwBtn').classList.remove('open');
+    document.getElementById('kwPanel').classList.remove('open');
+  }
+});
+
 const inp = document.getElementById('inp');
 const sendBtn = document.getElementById('send');
 
@@ -126,7 +229,13 @@ function selTrack(t, btn) {
   document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (t !== 'all') {
-    addMsg('bot', '<span class="badge">TRACK ' + t + '</span> <strong>' + TRACKS[t] + '</strong><br><br>You are now browsing Track ' + t + '. Ask me anything, for example:<br>2022 <em>What papers are in this track?</em><br>2022 <em>Tell me about a specific author</em><br>2022 <em>What topics are covered?</em>');
+    addMsg('bot',
+      '<span class="badge">TRACK ' + t + '</span> <strong>' + TRACKS[t] + '</strong><br><br>' +
+      'You are now browsing Track ' + t + '. Ask me anything, for example:<br>' +
+      '&bull; <em>What papers are in this track?</em><br>' +
+      '&bull; <em>Tell me about a specific author</em><br>' +
+      '&bull; <em>What topics are covered?</em>'
+    );
   }
 }
 
@@ -186,8 +295,7 @@ async function sendMessage() {
   if (!txt || loading) return;
   loading = true;
   sendBtn.disabled = true;
-  const welcome = document.getElementById('welcome');
-  if (welcome) welcome.remove();
+  document.getElementById('welcome')?.remove();
   inp.value = '';
   inp.style.height = 'auto';
   addMsg('user', txt);
@@ -220,13 +328,18 @@ async function resetChat() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ session_id: sid })
   });
-  const msgs = document.getElementById('msgs');
-  msgs.innerHTML = '';
-  const welcome = document.createElement('div');
-  welcome.className = 'welcome';
-  welcome.id = 'welcome';
-  welcome.innerHTML = '<div class="wtitle">&#8704;ISION_E</div><div class="wsub">Welcome to the Conference Bot<br>Ask anything about contributions, programme or logistics</div><div class="quick-btns"><button class="qbtn" onclick="quickAsk(\'What are the papers in Track 1?\')">Track 1 papers</button><button class="qbtn" onclick="quickAsk(\'What are the papers in Track 2?\')">Track 2 papers</button><button class="qbtn" onclick="quickAsk(\'What are the papers in Track 3?\')">Track 3 papers</button><button class="qbtn" onclick="quickAsk(\'What is the conference schedule?\')">Schedule</button><button class="qbtn" onclick="quickAsk(\'Where is the event taking place?\')">Venue</button><button class="qbtn" onclick="quickAsk(\'Tell me about contributions on LLM\')">LLM contributions</button><button class="qbtn" onclick="quickAsk(\'Tell me about contributions on BIM\')">BIM contributions</button></div>';
-  msgs.appendChild(welcome);
+  document.getElementById('msgs').innerHTML = `
+    <div class="welcome" id="welcome">
+      <div class="wtitle">&#8704;ISION_E</div>
+      <div class="wsub">Welcome to the Conference Bot<br>Ask anything about contributions, programme or logistics</div>
+      <div class="quick-btns">
+        <button class="qbtn" onclick="quickAsk('What are the papers in Track 1?')">Track 1 papers</button>
+        <button class="qbtn" onclick="quickAsk('What are the papers in Track 2?')">Track 2 papers</button>
+        <button class="qbtn" onclick="quickAsk('What are the papers in Track 3?')">Track 3 papers</button>
+        <button class="qbtn" onclick="quickAsk('What is the conference schedule?')">Schedule</button>
+        <button class="qbtn" onclick="quickAsk('Where is the event taking place?')">Venue</button>
+      </div>
+    </div>`;
   track = 'all';
   document.querySelectorAll('.tbtn').forEach((b, i) => b.classList.toggle('active', i === 0));
 }
