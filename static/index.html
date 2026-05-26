@@ -26,7 +26,7 @@ header{position:relative;z-index:10;padding:14px 20px;border-bottom:1px solid va
 .kw-btn:hover,.kw-btn.open{border-color:var(--accent);color:var(--accent2);background:rgba(124,106,247,.1);}
 .kw-btn .arrow{transition:transform .2s;font-size:8px;}
 .kw-btn.open .arrow{transform:rotate(180deg);}
-.kw-panel{display:none;position:absolute;top:calc(100% + 8px);left:0;width:540px;max-width:80vw;max-height:60vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,.6);}
+.kw-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:199;backdrop-filter:blur(4px);}.kw-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;max-width:92vw;max-height:70vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px 24px;z-index:200;box-shadow:0 16px 48px rgba(0,0,0,.7);}
 .kw-panel.open{display:block;}
 .kw-section{margin-bottom:12px;}
 .kw-section:last-child{margin-bottom:0;}
@@ -99,6 +99,7 @@ header{position:relative;z-index:10;padding:14px 20px;border-bottom:1px solid va
     <button class="kw-btn" id="kwBtn" onclick="toggleKeywords()">
       &#35; Keywords <span class="arrow">&#9660;</span>
     </button>
+    <div class="kw-overlay" id="kwOverlay" onclick="toggleKeywords()"></div>
     <div class="kw-panel" id="kwPanel">
       <div class="kw-section">
         <div class="kw-section-title">&#9656; Common — All Tracks</div>
@@ -191,8 +192,10 @@ buildKeywords();
 function toggleKeywords() {
   const btn = document.getElementById('kwBtn');
   const panel = document.getElementById('kwPanel');
+  const overlay = document.getElementById('kwOverlay');
   btn.classList.toggle('open');
   panel.classList.toggle('open');
+  overlay.style.display = panel.classList.contains('open') ? 'block' : 'none';
 }
 
 function searchKeyword(kw) {
@@ -203,9 +206,10 @@ function searchKeyword(kw) {
 // Close keywords panel when clicking outside
 document.addEventListener('click', function(e) {
   const wrapper = document.querySelector('.kw-wrapper');
-  if (wrapper && !wrapper.contains(e.target)) {
+  if (wrapper && !wrapper.contains(e.target) && !document.getElementById('kwPanel').contains(e.target)) {
     document.getElementById('kwBtn').classList.remove('open');
     document.getElementById('kwPanel').classList.remove('open');
+    document.getElementById('kwOverlay').style.display = 'none';
   }
 });
 
