@@ -10,115 +10,136 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
 body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 60% 40% at 20% 20%,rgba(124,106,247,.08) 0%,transparent 60%),radial-gradient(ellipse 40% 60% at 80% 80%,rgba(167,139,250,.06) 0%,transparent 60%);pointer-events:none;z-index:0;}
-header{position:relative;z-index:10;padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;background:rgba(10,10,15,.9);backdrop-filter:blur(12px);}
-.logo{font-family:'Space Mono',monospace;font-size:16px;font-weight:700;color:var(--accent2);}
-.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok);animation:pulse 2s infinite;margin-left:auto;}
+
+/* HEADER */
+header{position:relative;z-index:10;padding:12px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;background:rgba(10,10,15,.9);backdrop-filter:blur(12px);flex-wrap:nowrap;}
+.logo{font-family:'Space Mono',monospace;font-size:15px;font-weight:700;color:var(--accent2);white-space:nowrap;}
+.logo-sub{font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;white-space:nowrap;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 6px var(--ok);animation:pulse 2s infinite;flex-shrink:0;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
-.track-bar{position:relative;z-index:10;padding:10px 20px;border-bottom:1px solid var(--border);display:flex;gap:6px;align-items:center;background:rgba(10,10,15,.7);overflow-x:auto;}
+.header-right{display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0;}
+.reset-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-family:'Space Mono',monospace;transition:all .2s;white-space:nowrap;}
+.reset-btn:hover{border-color:var(--accent);color:var(--accent2);}
+
+/* KEYWORDS BUTTON */
+.kw-btn{padding:5px 11px;border-radius:16px;border:1px solid var(--accent);background:rgba(124,106,247,.1);color:var(--accent2);font-size:11px;font-family:'Space Mono',monospace;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;white-space:nowrap;}
+.kw-btn:hover,.kw-btn.open{background:rgba(124,106,247,.2);}
+.kw-btn .arrow{transition:transform .2s;font-size:8px;}
+.kw-btn.open .arrow{transform:rotate(180deg);}
+
+/* KEYWORDS MODAL */
+.kw-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;backdrop-filter:blur(3px);}
+.kw-overlay.open{display:block;}
+.kw-modal{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:min(580px,92vw);max-height:min(70vh,500px);overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px 20px;z-index:301;box-shadow:0 20px 60px rgba(0,0,0,.8);}
+.kw-modal.open{display:block;}
+.kw-modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+.kw-modal-title{font-family:'Space Mono',monospace;font-size:12px;color:var(--accent2);}
+.kw-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:20px;line-height:1;padding:0 4px;}
+.kw-section{margin-bottom:14px;}
+.kw-section:last-child{margin-bottom:0;}
+.kw-section-title{font-size:9px;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px;}
+.kw-tags{display:flex;flex-wrap:wrap;gap:5px;}
+.kw-tag{padding:4px 10px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:11px;cursor:pointer;transition:all .15s;}
+.kw-tag:hover{border-color:var(--accent);color:var(--accent2);background:rgba(124,106,247,.08);}
+.kw-tag.t1{border-color:rgba(124,106,247,.35);color:rgba(167,139,250,.8);}
+.kw-tag.t2{border-color:rgba(74,222,128,.25);color:rgba(74,222,128,.8);}
+.kw-tag.t3{border-color:rgba(251,191,36,.25);color:rgba(251,191,36,.8);}
+.kw-tag.common{border-color:rgba(148,163,184,.2);}
+
+/* TRACK BAR */
+.track-bar{position:relative;z-index:10;padding:8px 16px;border-bottom:1px solid var(--border);display:flex;gap:6px;background:rgba(10,10,15,.7);overflow-x:auto;}
 .track-bar::-webkit-scrollbar{height:0;}
-.tbtn{padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-family:'Space Mono',monospace;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.tbtn{padding:5px 11px;border-radius:16px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-family:'Space Mono',monospace;cursor:pointer;transition:all .2s;white-space:nowrap;}
 .tbtn:hover{border-color:var(--accent);color:var(--accent2);}
 .tbtn.active{background:rgba(124,106,247,.15);border-color:var(--accent);color:var(--accent2);}
 
-/* Keywords button and panel */
-.kw-wrapper{position:relative;flex-shrink:0;}
-.kw-btn{padding:5px 12px;border-radius:16px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:11px;font-family:'Space Mono',monospace;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:5px;}
-.kw-btn:hover,.kw-btn.open{border-color:var(--accent);color:var(--accent2);background:rgba(124,106,247,.1);}
-.kw-btn .arrow{transition:transform .2s;font-size:8px;}
-.kw-btn.open .arrow{transform:rotate(180deg);}
-.kw-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:199;backdrop-filter:blur(4px);}.kw-panel{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;max-width:92vw;max-height:70vh;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px 24px;z-index:200;box-shadow:0 16px 48px rgba(0,0,0,.7);}
-.kw-panel.open{display:block;}
-.kw-section{margin-bottom:12px;}
-.kw-section:last-child{margin-bottom:0;}
-.kw-section-title{font-size:9px;font-family:'Space Mono',monospace;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
-.kw-tags{display:flex;flex-wrap:wrap;gap:5px;}
-.kw-tag{padding:3px 9px;border-radius:12px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:11px;cursor:pointer;transition:all .15s;font-family:'DM Sans',sans-serif;}
-.kw-tag:hover{border-color:var(--accent);color:var(--accent2);background:rgba(124,106,247,.08);}
-.kw-tag.t1{border-color:rgba(124,106,247,.3);}
-.kw-tag.t2{border-color:rgba(74,222,128,.2);}
-.kw-tag.t3{border-color:rgba(251,191,36,.2);}
-.kw-tag.common{border-color:rgba(148,163,184,.2);}
-
-#msgs{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:14px;position:relative;z-index:1;}
+/* MESSAGES */
+#msgs{flex:1;overflow-y:auto;padding:16px 20px;display:flex;flex-direction:column;gap:12px;position:relative;z-index:1;}
 #msgs::-webkit-scrollbar{width:3px;}
 #msgs::-webkit-scrollbar-thumb{background:var(--border);}
-.msg{display:flex;gap:10px;max-width:85%;animation:fi .25s ease;}
+.msg{display:flex;gap:10px;max-width:88%;animation:fi .25s ease;}
 @keyframes fi{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
 .msg.user{align-self:flex-end;flex-direction:row-reverse;}
 .msg.bot{align-self:flex-start;}
-.av{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;flex-shrink:0;margin-top:2px;}
+.av{width:26px;height:26px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:9px;font-weight:700;flex-shrink:0;margin-top:2px;}
 .av.b{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;}
 .av.u{background:var(--surface2);border:1px solid var(--border);color:var(--muted);}
-.bub{padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.7;word-break:break-word;}
+.bub{padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.7;word-break:break-word;}
 .bot .bub{background:var(--bot);border:1px solid var(--border);border-top-left-radius:2px;}
 .user .bub{background:var(--user);border:1px solid rgba(124,106,247,.3);border-top-right-radius:2px;}
 .bub strong{color:var(--accent2);}
 .bub em{color:var(--muted);font-style:italic;}
-.badge{display:inline-block;padding:2px 7px;border-radius:9px;font-size:9px;font-family:'Space Mono',monospace;background:rgba(124,106,247,.15);border:1px solid rgba(124,106,247,.3);color:var(--accent2);margin-bottom:6px;margin-right:4px;}
+.badge{display:inline-block;padding:2px 7px;border-radius:9px;font-size:9px;font-family:'Space Mono',monospace;background:rgba(124,106,247,.15);border:1px solid rgba(124,106,247,.3);color:var(--accent2);margin-bottom:5px;margin-right:4px;}
+.inline-btn{background:none;border:1px solid var(--border);color:var(--accent2);padding:3px 10px;border-radius:12px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin:2px 0;transition:all .2s;display:inline-block;}
+.inline-btn:hover{background:rgba(124,106,247,.1);border-color:var(--accent);}
 .typing{display:flex;gap:3px;padding:12px 14px;background:var(--bot);border:1px solid var(--border);border-radius:10px;}
 .typing span{width:5px;height:5px;border-radius:50%;background:var(--accent);animation:ty 1.2s infinite;}
 .typing span:nth-child(2){animation-delay:.2s;}
 .typing span:nth-child(3){animation-delay:.4s;}
 @keyframes ty{0%,60%,100%{transform:translateY(0);opacity:.4;}30%{transform:translateY(-5px);opacity:1;}}
-.input-area{position:relative;z-index:10;padding:14px 20px;border-top:1px solid var(--border);background:rgba(10,10,15,.9);display:flex;gap:10px;align-items:flex-end;}
-#inp{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;resize:none;outline:none;min-height:40px;max-height:100px;transition:border-color .2s;line-height:1.5;}
+
+/* INPUT */
+.input-area{position:relative;z-index:10;padding:12px 16px;border-top:1px solid var(--border);background:rgba(10,10,15,.9);display:flex;gap:10px;align-items:flex-end;}
+#inp{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 13px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;resize:none;outline:none;min-height:40px;max-height:100px;transition:border-color .2s;line-height:1.5;}
 #inp:focus{border-color:var(--accent);}
 #inp::placeholder{color:var(--muted);}
 #send{width:40px;height:40px;border-radius:9px;border:none;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
 #send:hover{transform:scale(1.05);}
 #send:disabled{opacity:.4;cursor:not-allowed;transform:none;}
-.welcome{text-align:center;padding:40px 20px;}
-.wtitle{font-family:'Space Mono',monospace;font-size:24px;color:var(--accent2);margin-bottom:8px;}
-.wsub{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:24px;}
+
+/* WELCOME */
+.welcome{text-align:center;padding:32px 20px;}
+.wtitle{font-family:'Space Mono',monospace;font-size:22px;color:var(--accent2);margin-bottom:8px;}
+.wsub{font-size:13px;color:var(--muted);line-height:1.7;margin-bottom:22px;}
 .quick-btns{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
 .qbtn{padding:8px 14px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:12px;cursor:pointer;transition:all .2s;font-family:'DM Sans',sans-serif;}
 .qbtn:hover{border-color:var(--accent);color:var(--accent2);background:rgba(124,106,247,.08);}
-.reset-btn{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-family:'Space Mono',monospace;margin-left:8px;transition:all .2s;}
-.reset-btn:hover{border-color:var(--accent);color:var(--accent2);}
-.inline-btn{background:none;border:1px solid var(--border);color:var(--accent2);padding:3px 10px;border-radius:12px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin:2px 0;transition:all .2s;}
-.inline-btn:hover{background:rgba(124,106,247,.1);border-color:var(--accent);}
 </style>
 </head>
 <body>
+
+<!-- KEYWORDS OVERLAY + MODAL -->
+<div class="kw-overlay" id="kwOverlay" onclick="toggleKeywords()"></div>
+<div class="kw-modal" id="kwModal">
+  <div class="kw-modal-header">
+    <span class="kw-modal-title"># Keywords — Browse by topic</span>
+    <button class="kw-close" onclick="toggleKeywords()">&times;</button>
+  </div>
+  <div class="kw-section">
+    <div class="kw-section-title">&#9656; Common — All Tracks</div>
+    <div class="kw-tags" id="kwCommon"></div>
+  </div>
+  <div class="kw-section">
+    <div class="kw-section-title" style="color:rgba(167,139,250,.8)">&#9656; Track 1 — Representation &amp; Design</div>
+    <div class="kw-tags" id="kwT1"></div>
+  </div>
+  <div class="kw-section">
+    <div class="kw-section-title" style="color:rgba(74,222,128,.7)">&#9656; Track 2 — Heritage Conservation</div>
+    <div class="kw-tags" id="kwT2"></div>
+  </div>
+  <div class="kw-section">
+    <div class="kw-section-title" style="color:rgba(251,191,36,.7)">&#9656; Track 3 — Education &amp; Learning</div>
+    <div class="kw-tags" id="kwT3"></div>
+  </div>
+</div>
+
 <header>
   <div class="logo">&#8704;ISION_E</div>
-  <div style="font-size:11px;color:var(--muted);font-family:'Space Mono',monospace;">Conference Bot</div>
-  <div style="display:flex;align-items:center;gap:8px;margin-left:auto;">
+  <div class="logo-sub">Conference Bot</div>
+  <button class="kw-btn" id="kwBtn" onclick="toggleKeywords()">
+    &#35; Keywords <span class="arrow">&#9660;</span>
+  </button>
+  <div class="header-right">
     <button class="reset-btn" onclick="resetChat()">&#8635; Reset</button>
     <div class="dot"></div>
   </div>
 </header>
+
 <div class="track-bar">
   <button class="tbtn active" onclick="selTrack('all',this)">All Tracks</button>
   <button class="tbtn" onclick="selTrack('1',this)">T1 &middot; Representation &amp; Design</button>
   <button class="tbtn" onclick="selTrack('2',this)">T2 &middot; Heritage Conservation</button>
   <button class="tbtn" onclick="selTrack('3',this)">T3 &middot; Education &amp; Learning</button>
-
-  <!-- Keywords dropdown -->
-  <div class="kw-wrapper">
-    <button class="kw-btn" id="kwBtn" onclick="toggleKeywords()">
-      &#35; Keywords <span class="arrow">&#9660;</span>
-    </button>
-    <div class="kw-overlay" id="kwOverlay" onclick="toggleKeywords()"></div>
-    <div class="kw-panel" id="kwPanel">
-      <div class="kw-section">
-        <div class="kw-section-title">&#9656; Common — All Tracks</div>
-        <div class="kw-tags" id="kwCommon"></div>
-      </div>
-      <div class="kw-section">
-        <div class="kw-section-title" style="color:rgba(124,106,247,.8)">&#9656; Track 1 — Representation &amp; Design</div>
-        <div class="kw-tags" id="kwT1"></div>
-      </div>
-      <div class="kw-section">
-        <div class="kw-section-title" style="color:rgba(74,222,128,.6)">&#9656; Track 2 — Heritage Conservation</div>
-        <div class="kw-tags" id="kwT2"></div>
-      </div>
-      <div class="kw-section">
-        <div class="kw-section-title" style="color:rgba(251,191,36,.6)">&#9656; Track 3 — Education &amp; Learning</div>
-        <div class="kw-tags" id="kwT3"></div>
-      </div>
-    </div>
-  </div>
 </div>
 
 <div id="msgs">
@@ -134,12 +155,14 @@ header{position:relative;z-index:10;padding:14px 20px;border-bottom:1px solid va
     </div>
   </div>
 </div>
+
 <div class="input-area">
   <textarea id="inp" placeholder="Ask about the conference..." rows="1"></textarea>
   <button id="send">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
   </button>
 </div>
+
 <script>
 const TRACKS = {
   '1': 'AI for Representation and Design',
@@ -148,37 +171,27 @@ const TRACKS = {
 };
 
 const KEYWORDS = {
-  common: [
-    'LLM','RAG','NLP','Generative AI','Diffusion Models','Digital Twin',
-    'Neural Networks','GANs','NeRF','XR','Extended Reality','AI Ethics',
-    'Human-AI Collaboration','Multimodal AI','Data-driven','Fine-tuning'
-  ],
-  t1: [
-    'BIM','Parametric Design','Generative Design','Computational Creativity',
+  common: ['LLM','RAG','NLP','Generative AI','Diffusion Models','Digital Twin',
+    'Neural Networks','GANs','NeRF','Extended Reality','AI Ethics',
+    'Human-AI Collaboration','Multimodal AI','Data-driven','Fine-tuning'],
+  t1: ['BIM','Parametric Design','Generative Design','Computational Creativity',
     'Morphological Analysis','Style Transfer','Form-finding','Architectural Design',
-    'Urban Design','Sustainable Design','Virtual Prototyping','Shared Authorship'
-  ],
-  t2: [
-    'Digital Heritage','Photogrammetry','Scan-to-BIM','HBIM','Digital Survey',
+    'Urban Design','Sustainable Design','Virtual Prototyping','Shared Authorship'],
+  t2: ['Digital Heritage','Photogrammetry','Scan-to-BIM','HBIM','Digital Survey',
     'Heritage Conservation','Digital Restoration','Laser Scanning',
-    'Museum Studies','Linked Open Data','Predictive Conservation'
-  ],
-  t3: [
-    'Design Education','Pedagogy','Adaptive Learning','Gamification',
+    'Museum Studies','Linked Open Data','Predictive Conservation'],
+  t3: ['Design Education','Pedagogy','Adaptive Learning','Gamification',
     'Immersive Learning','Learning Analytics','Intelligent Tutoring',
-    'Student Modeling','Academic Integrity','Collaborative Virtual Environments'
-  ]
+    'Student Modeling','Academic Integrity','Collaborative Virtual Environments']
 };
 
-let track = 'all';
-let loading = false;
+let track = 'all', loading = false;
 const sid = 's' + Math.random().toString(36).slice(2, 9);
 
 // Build keyword tags
 function buildKeywords() {
   const fill = (id, kws, cls) => {
-    const el = document.getElementById(id);
-    el.innerHTML = kws.map(k =>
+    document.getElementById(id).innerHTML = kws.map(k =>
       `<button class="kw-tag ${cls}" onclick="searchKeyword('${k}')">${k}</button>`
     ).join('');
   };
@@ -191,11 +204,12 @@ buildKeywords();
 
 function toggleKeywords() {
   const btn = document.getElementById('kwBtn');
-  const panel = document.getElementById('kwPanel');
+  const modal = document.getElementById('kwModal');
   const overlay = document.getElementById('kwOverlay');
-  btn.classList.toggle('open');
-  panel.classList.toggle('open');
-  overlay.style.display = panel.classList.contains('open') ? 'block' : 'none';
+  const isOpen = modal.classList.contains('open');
+  btn.classList.toggle('open', !isOpen);
+  modal.classList.toggle('open', !isOpen);
+  overlay.classList.toggle('open', !isOpen);
 }
 
 function searchKeyword(kw) {
@@ -203,31 +217,16 @@ function searchKeyword(kw) {
   quickAsk('What are the contributions related to ' + kw + '?');
 }
 
-// Close keywords panel when clicking outside
-document.addEventListener('click', function(e) {
-  const wrapper = document.querySelector('.kw-wrapper');
-  if (wrapper && !wrapper.contains(e.target) && !document.getElementById('kwPanel').contains(e.target)) {
-    document.getElementById('kwBtn').classList.remove('open');
-    document.getElementById('kwPanel').classList.remove('open');
-    document.getElementById('kwOverlay').style.display = 'none';
-  }
-});
-
 const inp = document.getElementById('inp');
 const sendBtn = document.getElementById('send');
 
-inp.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendMessage();
-  }
+inp.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
 });
-
 inp.addEventListener('input', function() {
   this.style.height = 'auto';
   this.style.height = Math.min(this.scrollHeight, 100) + 'px';
 });
-
 sendBtn.addEventListener('click', sendMessage);
 
 function selTrack(t, btn) {
@@ -237,15 +236,15 @@ function selTrack(t, btn) {
   if (t !== 'all') {
     addMsg('bot',
       '<span class="badge">TRACK ' + t + '</span> <strong>' + TRACKS[t] + '</strong><br><br>' +
-      'You are now browsing Track ' + t + '. Try asking:<br>' +
-      '&bull; <button class="inline-btn" onclick="quickAsk(\'What are all the papers in Track ' + t + '?\')">List all papers in Track ' + t + '</button><br>' +
-      '&bull; <button class="inline-btn" onclick="quickAsk(\'What topics does Track ' + t + ' cover?\')">What topics does this track cover?</button><br>' +
-      '&bull; Or type an author name or keyword'
+      'You are now browsing Track ' + t + '. Try:<br>' +
+      '<button class="inline-btn" onclick="quickAsk(\'What are all the papers in Track ' + t + '?\')">List all papers</button> &nbsp; ' +
+      '<button class="inline-btn" onclick="quickAsk(\'What topics does Track ' + t + ' cover?\')">Topics covered</button>'
     );
   }
 }
 
 function quickAsk(q) {
+  document.getElementById('welcome')?.remove();
   inp.value = q;
   sendMessage();
 }
@@ -268,8 +267,7 @@ function addMsg(role, html) {
   const b = document.createElement('div');
   b.className = 'bub';
   b.innerHTML = html;
-  d.appendChild(av);
-  d.appendChild(b);
+  d.appendChild(av); d.appendChild(b);
   msgs.appendChild(d);
   msgs.scrollTop = msgs.scrollHeight;
 }
@@ -277,24 +275,18 @@ function addMsg(role, html) {
 function showTyping() {
   const msgs = document.getElementById('msgs');
   const d = document.createElement('div');
-  d.className = 'msg bot';
-  d.id = 'typing';
+  d.className = 'msg bot'; d.id = 'typing';
   const av = document.createElement('div');
-  av.className = 'av b';
-  av.textContent = 'AI';
+  av.className = 'av b'; av.textContent = 'AI';
   const t = document.createElement('div');
   t.className = 'typing';
   t.innerHTML = '<span></span><span></span><span></span>';
-  d.appendChild(av);
-  d.appendChild(t);
+  d.appendChild(av); d.appendChild(t);
   msgs.appendChild(d);
   msgs.scrollTop = msgs.scrollHeight;
 }
 
-function hideTyping() {
-  const t = document.getElementById('typing');
-  if (t) t.remove();
-}
+function hideTyping() { document.getElementById('typing')?.remove(); }
 
 async function sendMessage() {
   const txt = inp.value.trim();
@@ -302,8 +294,7 @@ async function sendMessage() {
   loading = true;
   sendBtn.disabled = true;
   document.getElementById('welcome')?.remove();
-  inp.value = '';
-  inp.style.height = 'auto';
+  inp.value = ''; inp.style.height = 'auto';
   addMsg('user', txt);
   showTyping();
   try {
@@ -314,12 +305,9 @@ async function sendMessage() {
     });
     const data = await r.json();
     hideTyping();
-    const html = formatText(data.answer || 'No response.');
-    addMsg('bot', html);
-    if (data.track && data.track !== track) {
-      track = data.track;
-    }
-  } catch (e) {
+    addMsg('bot', formatText(data.answer || 'No response.'));
+    if (data.track && data.track !== track) track = data.track;
+  } catch(e) {
     hideTyping();
     addMsg('bot', 'Connection error. Please try again.');
   }
