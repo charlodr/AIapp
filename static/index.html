@@ -229,17 +229,46 @@ inp.addEventListener('input', function() {
 });
 sendBtn.addEventListener('click', sendMessage);
 
+
+const TRACK_DESCRIPTIONS = {
+  '1': {
+    en: "Track 1 explores AI as a creative partner that amplifies human imagination. Topics include AI systems for generating new ideas, forms and visual languages, methodologies for creating and hybridizing images and 3D models, co-design systems, predictive applications, and critical reflections on the aesthetics emerging from human-machine collaboration.",
+    it: "La Track 1 esplora l’AI come partner creativo. I temi includono sistemi per la generazione di nuove idee, forme e linguaggi visivi, metodologie per la creazione e l’ibridazione di immagini e modelli 3D, sistemi di co-design assistito, applicazioni predittive e riflessioni critiche sulle estetiche emergenti dalla collaborazione uomo-macchina."
+  },
+  '2': {
+    en: "Track 2 investigates AI potential in conserving, documenting and valorising cultural heritage, with attention to museums, archives and libraries. Key themes include collaborative interpretation between human and artificial intelligence, semantic enrichment of digital models, interactive documentation, advanced diagnostics for preventive conservation, and new modes of access to physical and digital collections.",
+    it: "La Track 2 indaga le potenzialita dell’AI nella conservazione, documentazione e valorizzazione del patrimonio culturale. I temi principali includono l’interpretazione collaborativa tra intelligenza umana e artificiale, l’arricchimento semantico di modelli digitali, la documentazione interattiva, le analisi diagnostiche avanzate per la conservazione preventiva e nuove modalita di accesso alle collezioni."
+  },
+  '3': {
+    en: "Track 3 explores AI impact on educational paradigms and teaching-learning processes. Key themes include personalised learning models, NLP for fluid student interactions, gamification, immersive learning environments, and rigorous approaches to learning validation in hybrid contexts that combine technology and pedagogy.",
+    it: "La Track 3 esplora l’impatto dell’AI sui paradigmi educativi. I temi principali includono modelli di didattica personalizzata e interattiva, sistemi NLP per interazioni piu fluide, gamification, ambienti di apprendimento immersivo e approcci per la validazione dell’apprendimento in contesti ibridi che intrecciano tecnologia e pedagogia."
+  }
+};
+
+function detectLang() {
+  // Simple detection based on browser language
+  return navigator.language && navigator.language.startsWith('it') ? 'it' : 'en';
+}
+
 function selTrack(t, btn) {
   track = t;
   document.querySelectorAll('.tbtn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   if (t !== 'all') {
-    addMsg('bot',
-      '<span class="badge">TRACK ' + t + '</span> <strong>' + TRACKS[t] + '</strong><br><br>' +
-      'You are now browsing Track ' + t + '. Try:<br>' +
-      '<button class="inline-btn" onclick="quickAsk(\'What are all the papers in Track ' + t + '?\')">List all papers</button> &nbsp; ' +
-      '<button class="inline-btn" onclick="quickAsk(\'What topics does Track ' + t + ' cover?\')">Topics covered</button>'
-    );
+    const html = [
+      '<span class="badge">TRACK ' + t + '</span> <strong>' + TRACKS[t] + '</strong><br><br>',
+      'You are now browsing Track ' + t + '. Try:<br>',
+      '<button class="inline-btn" id="list-btn-' + t + '">List all papers</button>',
+      ' &nbsp; ',
+      '<button class="inline-btn" id="about-btn-' + t + '">About this track</button>'
+    ].join('');
+    addMsg('bot', html);
+    setTimeout(function() {
+      var lb = document.getElementById('list-btn-' + t);
+      var ab = document.getElementById('about-btn-' + t);
+      if (lb) lb.onclick = function() { quickAsk('List all papers and authors in Track ' + t); };
+      if (ab) ab.onclick = function() { showTrackDescription(t); };
+    }, 50);
   }
 }
 
@@ -287,6 +316,19 @@ function showTyping() {
 }
 
 function hideTyping() { document.getElementById('typing')?.remove(); }
+
+
+function showTrackDescription(t) {
+  const lang = detectLang();
+  const desc = TRACK_DESCRIPTIONS[t][lang];
+  const itNames = [
+    'AI per la Rappresentazione e la Progettazione',
+    'AI per la Conservazione e la Valorizzazione del Patrimonio',
+    'AI per la Didattica e l’Educazione'
+  ];
+  const trackName = lang === 'it' ? itNames[parseInt(t)-1] : TRACKS[t];
+  addMsg('bot', '<span class="badge">TRACK ' + t + '</span><br><strong>' + trackName + '</strong><br><br>' + desc);
+}
 
 async function sendMessage() {
   const txt = inp.value.trim();
