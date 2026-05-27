@@ -132,8 +132,12 @@ def is_complex_query(query):
         "ethical",
         "philosophical",
         "methodologies",
+        "specific approach",
+        "specific methodology",
         "across papers",
         "state of the art",
+        "which one",
+        "how does",
 
         "confronta",
         "differenze",
@@ -143,9 +147,11 @@ def is_complex_query(query):
         "riassumi",
         "panoramica",
         "metodologie",
+        "quale",
+        "quale approccio",
     ]
 
-    if len(q.split()) > 14:
+    if len(q.split()) > 9:
         return True
 
     return any(m in q for m in complex_markers)
@@ -173,57 +179,91 @@ def detect_track(text):
     return valid.get(clean)
 
 # ─────────────────────────────────────────────────────────────
-# TITLE CLEANING
+# TITLE EXTRACTION
 # ─────────────────────────────────────────────────────────────
 
-def clean_title(raw):
+def extract_title(raw_title, snippet):
 
-    if not raw:
-        return None
-
-    title = raw
-
-    title = re.sub(
-        r"^track[123]",
-        "",
-        title,
-        flags=re.IGNORECASE
-    )
-
-    title = re.sub(
-        r"\.pdf$",
-        "",
-        title,
-        flags=re.IGNORECASE
-    )
-
-    title = re.sub(
-        r"[_\-]+",
-        " ",
-        title
-    )
-
-    title = re.sub(
-        r"([a-z])([A-Z])",
-        r"\1 \2",
-        title
-    )
-
-    title = re.sub(
-        r"\s+",
-        " ",
-        title
-    )
-
-    title = title.strip()
-
-    if title.lower() in [
+    bad_patterns = [
         "anonymous",
-        "(anonymous)"
-    ]:
-        return None
+        "text",
+        "conference",
+        "track 1",
+        "track 2",
+        "track 3",
+        "visione",
+        "minor revisions",
+    ]
 
-    return title
+    if raw_title:
+
+        title = raw_title
+
+        title = re.sub(
+            r"^track[123]",
+            "",
+            title,
+            flags=re.IGNORECASE
+        )
+
+        title = re.sub(
+            r"\.pdf$",
+            "",
+            title,
+            flags=re.IGNORECASE
+        )
+
+        title = re.sub(
+            r"[_\-]+",
+            " ",
+            title
+        )
+
+        title = re.sub(
+            r"([a-z])([A-Z])",
+            r"\1 \2",
+            title
+        )
+
+        title = re.sub(
+            r"\s+",
+            " ",
+            title
+        )
+
+        title = title.strip()
+
+        lower = title.lower()
+
+        if not any(b in lower for b in bad_patterns):
+
+            if len(title.split()) >= 4:
+                return title
+
+    if snippet:
+
+        lines = re.split(r"[.!?\n]", snippet)
+
+        for line in lines:
+
+            line = line.strip()
+
+            if len(line.split()) < 5:
+                continue
+
+            if len(line) > 180:
+                continue
+
+            lower = line.lower()
+
+            if any(b in lower for b in bad_patterns):
+                continue
+
+            if re.search(r"\b(ai|llm|bim|design|heritage|learning)\b", lower):
+
+                return line
+
+    return None
 
 # ─────────────────────────────────────────────────────────────
 # SNIPPET CLEANING
@@ -246,23 +286,25 @@ def clean_snippet(text):
         text
     )
 
-    text = text.strip()
-
     noise = [
         "VISIONE Conference June",
         "Track 1:",
         "Track 2:",
         "Track 3:",
         "Salone d'Onore",
+        "minor revisions implemented",
+        "∀ISION_E – Drawing a Vision",
     ]
 
     for n in noise:
         text = text.replace(n, "")
 
-    if len(text) > 260:
-        text = text[:260] + "..."
+    text = text.strip()
 
-    return text.strip()
+    if len(text) > 280:
+        text = text[:280] + "..."
+
+    return text
 
 # ─────────────────────────────────────────────────────────────
 # QUERY EXPANSION
@@ -323,38 +365,27 @@ def synthesize(query, docs, language="en"):
         )
 
     intro = (
-        "The conference includes several relevant contributions related to your query."
+        "The most relevant conference contributions related to your query are:"
         if language == "en"
         else
-        "La conferenza include diversi contributi rilevanti rispetto alla tua richiesta."
+        "I contributi più rilevanti rispetto alla tua richiesta sono:"
     )
 
     body = []
 
     for d in docs[:4]:
 
-        title = d["title"]
-
-        snippet = d["snippet"]
-
         text = (
-            f"• {title}\n{snippet}"
+            f"• {d['title']}\n"
+            f"{d['snippet']}"
         )
 
         body.append(text)
-
-    outro = (
-        "\n\nThese papers explore different perspectives on AI-assisted design, representation and digital cultural heritage."
-        if language == "en"
-        else
-        "\n\nQuesti contributi esplorano differenti prospettive sull'AI applicata al design, alla rappresentazione e al patrimonio culturale digitale."
-    )
 
     return (
         intro
         + "\n\n"
         + "\n\n".join(body)
-        + outro
     )
 
 # ─────────────────────────────────────────────────────────────
@@ -383,7 +414,7 @@ def gemini_synthesis(query, docs, language="en"):
     prompt = f"""
 You are the official assistant of the VISIONE conference.
 
-Use ONLY the conference material provided below.
+Use ONLY the conference material below.
 
 User query:
 {query}
@@ -392,13 +423,14 @@ Conference material:
 {context_text}
 
 Instructions:
-- Write a concise academic synthesis.
-- Mention relevant papers naturally.
+- Answer naturally.
+- Mention the most relevant paper.
+- Explain WHY it is relevant.
+- Compare approaches if useful.
 - Avoid raw snippet dumps.
-- Compare contributions when useful.
-- Keep the answer readable and elegant.
+- Avoid listing filenames.
 - Avoid hallucinations.
-- If evidence is weak, say so briefly.
+- Keep answer concise and elegant.
 
 {lang_instruction}
 """
@@ -468,18 +500,8 @@ def ask_vertex(query, track=None, language="en"):
         raw_title = (
             derived.get("title")
             or doc.get("id")
-            or "Untitled"
+            or ""
         )
-
-        title = clean_title(raw_title)
-
-        if not title:
-            continue
-
-        if title.lower() in seen_titles:
-            continue
-
-        seen_titles.add(title.lower())
 
         snippets = derived.get(
             "snippets",
@@ -500,6 +522,19 @@ def ask_vertex(query, track=None, language="en"):
         if not snippet:
             continue
 
+        title = extract_title(
+            raw_title,
+            snippet
+        )
+
+        if not title:
+            continue
+
+        if title.lower() in seen_titles:
+            continue
+
+        seen_titles.add(title.lower())
+
         docs.append({
             "title": title,
             "snippet": snippet
@@ -517,9 +552,6 @@ def ask_vertex(query, track=None, language="en"):
 
     if not docs:
         return None, None
-
-    # SIMPLE → LOCAL
-    # COMPLEX → GEMINI
 
     if is_complex_query(query):
 
