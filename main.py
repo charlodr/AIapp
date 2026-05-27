@@ -1,14 +1,10 @@
 import os
-import re
-import string
 import requests
 
 from flask import Flask, request, jsonify, send_from_directory
 
 from google.auth import default
 from google.auth.transport.requests import Request
-
-import google.generativeai as genai
 
 app = Flask(__name__, static_folder="static")
 
@@ -31,15 +27,10 @@ DATASTORE_ID = os.environ.get(
     "visionedatastore_1779872407393"
 )
 
-if GCP_LOCATION == "global":
-    api_host = "discoveryengine.googleapis.com"
-else:
-    api_host = f"{GCP_LOCATION}-discoveryengine.googleapis.com"
-
 ENDPOINT = (
-    f"https://{api_host}/v1/projects/"
+    f"https://discoveryengine.googleapis.com/v1/projects/"
     f"{GCP_PROJECT_ID}/locations/{GCP_LOCATION}/collections/default_collection/"
-    f"dataStores/{DATASTORE_ID}/servingConfigs/default_search:search"
+    f"dataStores/{DATASTORE_ID}/servingConfigs/default_search:answer"
 )
 
 TRACKS = {
@@ -51,16 +42,6 @@ TRACKS = {
 sessions = {}
 
 MAX_HISTORY = 5
-
-# ─────────────────────────────────────────────────────────────
-# GEMINI
-# ─────────────────────────────────────────────────────────────
-
-genai.configure()
-
-gemini_model = genai.GenerativeModel(
-    "gemini-2.5-flash"
-)
 
 # ─────────────────────────────────────────────────────────────
 # SESSION
@@ -92,69 +73,22 @@ def gcp_token():
     return creds.token
 
 # ─────────────────────────────────────────────────────────────
-# LANGUAGE
+# LANGUAGE DETECTION
 # ─────────────────────────────────────────────────────────────
 
 def is_italian(text):
 
     markers = [
         " il ", " la ", " le ", " gli ",
-        " del ", " della ", " che ",
-        " non ", " per ", " con ",
-        " una ", " sono ",
+        " della ", " del ",
+        " non ", " per ",
         "ciao", "grazie",
-        "dove", "quando", "come",
+        "come", "dove",
     ]
 
     lower = " " + text.lower() + " "
 
     return sum(1 for m in markers if m in lower) >= 2
-
-# ─────────────────────────────────────────────────────────────
-# COMPLEX QUERY DETECTION
-# ─────────────────────────────────────────────────────────────
-
-def is_complex_query(query):
-
-    q = query.lower()
-
-    complex_markers = [
-
-        "compare",
-        "differences",
-        "similarities",
-        "relationship",
-        "connections",
-        "trends",
-        "themes",
-        "summarize",
-        "overview",
-        "ethical",
-        "philosophical",
-        "methodologies",
-        "specific approach",
-        "specific methodology",
-        "across papers",
-        "state of the art",
-        "which one",
-        "how does",
-
-        "confronta",
-        "differenze",
-        "somiglianze",
-        "trend",
-        "temi",
-        "riassumi",
-        "panoramica",
-        "metodologie",
-        "quale",
-        "quale approccio",
-    ]
-
-    if len(q.split()) > 9:
-        return True
-
-    return any(m in q for m in complex_markers)
 
 # ─────────────────────────────────────────────────────────────
 # TRACK DETECTION
@@ -179,288 +113,85 @@ def detect_track(text):
     return valid.get(clean)
 
 # ─────────────────────────────────────────────────────────────
-# TITLE EXTRACTION
-# ─────────────────────────────────────────────────────────────
-
-def extract_title(raw_title, snippet):
-
-    bad_patterns = [
-        "anonymous",
-        "text",
-        "conference",
-        "track 1",
-        "track 2",
-        "track 3",
-        "visione",
-        "minor revisions",
-    ]
-
-    if raw_title:
-
-        title = raw_title
-
-        title = re.sub(
-            r"^track[123]",
-            "",
-            title,
-            flags=re.IGNORECASE
-        )
-
-        title = re.sub(
-            r"\.pdf$",
-            "",
-            title,
-            flags=re.IGNORECASE
-        )
-
-        title = re.sub(
-            r"[_\-]+",
-            " ",
-            title
-        )
-
-        title = re.sub(
-            r"([a-z])([A-Z])",
-            r"\1 \2",
-            title
-        )
-
-        title = re.sub(
-            r"\s+",
-            " ",
-            title
-        )
-
-        title = title.strip()
-
-        lower = title.lower()
-
-        if not any(b in lower for b in bad_patterns):
-
-            if len(title.split()) >= 4:
-                return title
-
-    if snippet:
-
-        lines = re.split(r"[.!?\n]", snippet)
-
-        for line in lines:
-
-            line = line.strip()
-
-            if len(line.split()) < 5:
-                continue
-
-            if len(line) > 180:
-                continue
-
-            lower = line.lower()
-
-            if any(b in lower for b in bad_patterns):
-                continue
-
-            if re.search(r"\b(ai|llm|bim|design|heritage|learning)\b", lower):
-
-                return line
-
-    return None
-
-# ─────────────────────────────────────────────────────────────
-# SNIPPET CLEANING
-# ─────────────────────────────────────────────────────────────
-
-def clean_snippet(text):
-
-    if not text:
-        return ""
-
-    text = re.sub(
-        r"<[^>]+>",
-        "",
-        text
-    )
-
-    text = re.sub(
-        r"\s+",
-        " ",
-        text
-    )
-
-    noise = [
-        "VISIONE Conference June",
-        "Track 1:",
-        "Track 2:",
-        "Track 3:",
-        "Salone d'Onore",
-        "minor revisions implemented",
-        "∀ISION_E – Drawing a Vision",
-    ]
-
-    for n in noise:
-        text = text.replace(n, "")
-
-    text = text.strip()
-
-    if len(text) > 280:
-        text = text[:280] + "..."
-
-    return text
-
-# ─────────────────────────────────────────────────────────────
-# QUERY EXPANSION
-# ─────────────────────────────────────────────────────────────
-
-def normalize_query(query):
-
-    q = query.lower()
-
-    mapping = {
-
-        "llm": (
-            "large language models "
-            "architectural design BIM AI"
-        ),
-
-        "hbim": (
-            "HBIM heritage BIM conservation"
-        ),
-
-        "vr": (
-            "virtual reality immersive learning"
-        ),
-
-        "ai": (
-            "artificial intelligence design"
-        ),
-
-        "education": (
-            "education learning pedagogy AI"
-        ),
-
-        "representation": (
-            "architectural representation AI"
-        ),
-    }
-
-    for k, v in mapping.items():
-
-        if q.strip() == k:
-            return v
-
-    return q
-
-# ─────────────────────────────────────────────────────────────
-# LOCAL SYNTHESIS
-# ─────────────────────────────────────────────────────────────
-
-def synthesize(query, docs, language="en"):
-
-    if not docs:
-
-        return (
-            "Non ho trovato risultati rilevanti."
-            if language == "it"
-            else
-            "I couldn't find relevant results."
-        )
-
-    intro = (
-        "The most relevant conference contributions related to your query are:"
-        if language == "en"
-        else
-        "I contributi più rilevanti rispetto alla tua richiesta sono:"
-    )
-
-    body = []
-
-    for d in docs[:4]:
-
-        text = (
-            f"• {d['title']}\n"
-            f"{d['snippet']}"
-        )
-
-        body.append(text)
-
-    return (
-        intro
-        + "\n\n"
-        + "\n\n".join(body)
-    )
-
-# ─────────────────────────────────────────────────────────────
-# GEMINI SYNTHESIS
-# ─────────────────────────────────────────────────────────────
-
-def gemini_synthesis(query, docs, language="en"):
-
-    context = []
-
-    for d in docs:
-
-        context.append(
-            f"TITLE: {d['title']}\n"
-            f"CONTENT: {d['snippet']}"
-        )
-
-    context_text = "\n\n".join(context)
-
-    lang_instruction = (
-        "Respond in Italian."
-        if language == "it"
-        else "Respond in English."
-    )
-
-    prompt = f"""
-You are the official assistant of the VISIONE conference.
-
-Use ONLY the conference material below.
-
-User query:
-{query}
-
-Conference material:
-{context_text}
-
-Instructions:
-- Answer naturally.
-- Mention the most relevant paper.
-- Explain WHY it is relevant.
-- Compare approaches if useful.
-- Avoid raw snippet dumps.
-- Avoid listing filenames.
-- Avoid hallucinations.
-- Keep answer concise and elegant.
-
-{lang_instruction}
-"""
-
-    response = gemini_model.generate_content(
-        prompt
-    )
-
-    return response.text.strip()
-
-# ─────────────────────────────────────────────────────────────
-# VERTEX SEARCH
+# ANSWER API
 # ─────────────────────────────────────────────────────────────
 
 def ask_vertex(query, track=None, language="en"):
 
     token = gcp_token()
 
-    normalized_query = normalize_query(query)
+    prompt_preamble = """
+You are the official assistant of the VISIONE conference.
+
+Provide academically professional answers.
+
+When possible:
+- synthesize information across papers,
+- mention paper titles naturally,
+- explain conceptual relationships,
+- avoid raw snippet dumps,
+- avoid filenames,
+- answer clearly and elegantly.
+"""
+
+    if language == "it":
+
+        prompt_preamble += """
+Always answer in Italian.
+"""
+
+    else:
+
+        prompt_preamble += """
+Always answer in English.
+"""
 
     payload = {
-        "query": normalized_query,
-        "pageSize": 10,
 
-        "contentSearchSpec": {
-            "snippetSpec": {
-                "returnSnippet": True
+        "query": {
+            "text": query
+        },
+
+        "answerGenerationSpec": {
+
+            "ignoreAdversarialQuery": True,
+
+            "ignoreNonAnswerSeekingQuery": False,
+
+            "ignoreLowRelevantContent": False,
+
+            "modelSpec": {
+                "modelVersion": "gemini-2.0-flash-001"
+            },
+
+            "promptSpec": {
+                "preamble": prompt_preamble
+            },
+
+            "includeCitations": False
+        },
+
+        "relatedQuestionsSpec": {
+            "enable": False
+        },
+
+        "searchSpec": {
+
+            "searchParams": {
+                "maxReturnResults": 8
             }
         }
     }
+
+    # ─────────────────────────────────────────
+    # TRACK FILTER
+    # ─────────────────────────────────────────
+
+    if track in ("1", "2", "3"):
+
+        payload["searchSpec"]["filter"] = (
+            f'uri: ANY("track{track}")'
+        )
 
     response = requests.post(
         ENDPOINT,
@@ -469,140 +200,20 @@ def ask_vertex(query, track=None, language="en"):
             "Content-Type": "application/json"
         },
         json=payload,
-        timeout=30,
+        timeout=60,
     )
 
     response.raise_for_status()
 
     data = response.json()
 
-    results = data.get("results", [])
+    answer = (
+        data.get("answer", {})
+        .get("answerText", "")
+        .strip()
+    )
 
-    if not results:
-        return None, None
-
-    docs = []
-
-    seen_titles = set()
-
-    source_track = track
-
-    for r in results:
-
-        doc = r.get("document", {})
-
-        derived = doc.get(
-            "derivedStructData",
-            {}
-        )
-
-        raw_title = (
-            derived.get("title")
-            or doc.get("id")
-            or ""
-        )
-
-        snippets = derived.get(
-            "snippets",
-            []
-        )
-
-        snippet = ""
-
-        if snippets:
-
-            snippet = snippets[0].get(
-                "snippet",
-                ""
-            )
-
-        snippet = clean_snippet(snippet)
-
-        if not snippet:
-            continue
-
-        uri = (
-            derived.get("link", "")
-            or derived.get("uri", "")
-            or ""
-        ).lower()
-
-        # ─────────────────────────────────────
-        # SAFE TRACK FILTER
-        # ─────────────────────────────────────
-
-        if track in ("1", "2", "3"):
-
-            # allow if uri OR title references track
-            raw_combined = (
-                raw_title.lower()
-                + " "
-                + uri
-                + " "
-                + snippet.lower()
-            )
-
-            if f"track {track}" not in raw_combined and \
-               f"track{track}" not in raw_combined:
-                continue
-
-        title = extract_title(
-            raw_title,
-            snippet
-        )
-
-        if not title:
-            continue
-
-        if title.lower() in seen_titles:
-            continue
-
-        seen_titles.add(title.lower())
-
-        docs.append({
-            "title": title,
-            "snippet": snippet
-        })
-
-    if not docs:
-        return None, None
-
-    # ─────────────────────────────────────────
-    # SIMPLE → LOCAL
-    # COMPLEX → GEMINI
-    # ─────────────────────────────────────────
-
-    if is_complex_query(query):
-
-        try:
-
-            answer = gemini_synthesis(
-                query=query,
-                docs=docs,
-                language=language
-            )
-
-        except Exception as e:
-
-            app.logger.error(
-                f"Gemini synthesis error: {e}"
-            )
-
-            answer = synthesize(
-                query=query,
-                docs=docs,
-                language=language
-            )
-
-    else:
-
-        answer = synthesize(
-            query=query,
-            docs=docs,
-            language=language
-        )
-
-    return answer, source_track
+    return answer, track
 
 # ─────────────────────────────────────────────────────────────
 # ROUTES
@@ -657,11 +268,16 @@ def chat():
     )
 
     # ─────────────────────────────────────────
-    # TRACK SELECTION
+    # TRACK FROM UI
     # ─────────────────────────────────────────
 
     if ui_track in ("1", "2", "3"):
+
         session["track"] = ui_track
+
+    # ─────────────────────────────────────────
+    # TRACK TEXT COMMAND
+    # ─────────────────────────────────────────
 
     detected_track = detect_track(message)
 
@@ -685,7 +301,7 @@ def chat():
         })
 
     # ─────────────────────────────────────────
-    # QUERY
+    # ANSWER QUERY
     # ─────────────────────────────────────────
 
     try:
@@ -698,7 +314,7 @@ def chat():
 
     except Exception as e:
 
-        app.logger.error(f"Vertex error: {e}")
+        app.logger.error(f"Vertex answer error: {e}")
 
         answer = None
         source_track = None
@@ -713,9 +329,6 @@ def chat():
         )
 
     else:
-
-        if source_track and not session["track"]:
-            session["track"] = source_track
 
         reply = answer
 
