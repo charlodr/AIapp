@@ -27,10 +27,15 @@ DATASTORE_ID = os.environ.get(
     "visionedatastore_1779872407393"
 )
 
+SERVING_CONFIG = (
+    f"projects/{GCP_PROJECT_ID}/locations/{GCP_LOCATION}/"
+    f"collections/default_collection/dataStores/{DATASTORE_ID}/"
+    f"servingConfigs/default_search"
+)
+
 ENDPOINT = (
-    f"https://discoveryengine.googleapis.com/v1/projects/"
-    f"{GCP_PROJECT_ID}/locations/{GCP_LOCATION}/collections/default_collection/"
-    f"dataStores/{DATASTORE_ID}/servingConfigs/default_search:answer"
+    "https://discoveryengine.googleapis.com/v1/"
+    f"{SERVING_CONFIG}:answer"
 )
 
 TRACKS = {
@@ -47,6 +52,7 @@ MAX_HISTORY = 5
 # SESSION
 # ─────────────────────────────────────────────────────────────
 
+
 def get_session(sid):
 
     if sid not in sessions:
@@ -58,9 +64,11 @@ def get_session(sid):
 
     return sessions[sid]
 
+
 # ─────────────────────────────────────────────────────────────
 # AUTH
 # ─────────────────────────────────────────────────────────────
+
 
 def gcp_token():
 
@@ -72,9 +80,11 @@ def gcp_token():
 
     return creds.token
 
+
 # ─────────────────────────────────────────────────────────────
-# LANGUAGE DETECTION
+# LANGUAGE
 # ─────────────────────────────────────────────────────────────
+
 
 def is_italian(text):
 
@@ -90,9 +100,11 @@ def is_italian(text):
 
     return sum(1 for m in markers if m in lower) >= 2
 
+
 # ─────────────────────────────────────────────────────────────
 # TRACK DETECTION
 # ─────────────────────────────────────────────────────────────
+
 
 def detect_track(text):
 
@@ -112,47 +124,78 @@ def detect_track(text):
 
     return valid.get(clean)
 
+
+# ─────────────────────────────────────────────────────────────
+# QUERY ENRICHMENT
+# ─────────────────────────────────────────────────────────────
+
+
+def enrich_query(query, track):
+
+    if not track:
+        return query
+
+    track_name = TRACKS.get(track, "")
+
+    return (
+        f"{query}. "
+        f"Focus specifically on papers from {track_name}."
+    )
+
+
 # ─────────────────────────────────────────────────────────────
 # ANSWER API
 # ─────────────────────────────────────────────────────────────
+
 
 def ask_vertex(query, track=None, language="en"):
 
     token = gcp_token()
 
-    prompt_preamble = """
-You are the official assistant of the VISIONE conference.
-
-Provide academically professional answers.
-
-When possible:
-- synthesize information across papers,
-- mention paper titles naturally,
-- explain conceptual relationships,
-- avoid raw snippet dumps,
-- avoid filenames,
-- answer clearly and elegantly.
-"""
+    enriched_query = enrich_query(query, track)
 
     if language == "it":
 
-        prompt_preamble += """
-Always answer in Italian.
+        preamble = """
+Sei l'assistente ufficiale della conferenza VISIONE.
+
+Rispondi in italiano.
+
+Fornisci risposte accademiche naturali e ben scritte.
+
+Quando possibile:
+- sintetizza informazioni tra più paper,
+- menziona i titoli dei paper in modo naturale,
+- evita filename tecnici,
+- evita dump di snippet,
+- spiega relazioni concettuali.
 """
 
     else:
 
-        prompt_preamble += """
-Always answer in English.
+        preamble = """
+You are the official assistant of the VISIONE conference.
+
+Answer in English.
+
+Provide academically professional and natural responses.
+
+When possible:
+- synthesize information across papers,
+- mention paper titles naturally,
+- avoid technical filenames,
+- avoid snippet dumps,
+- explain conceptual relationships.
 """
 
     payload = {
-
         "query": {
-            "text": query
+            "text": enriched_query
         },
 
         "answerGenerationSpec": {
+
+            "includeCitations": False,
 
             "ignoreAdversarialQuery": True,
 
@@ -161,37 +204,18 @@ Always answer in English.
             "ignoreLowRelevantContent": False,
 
             "modelSpec": {
-                "modelVersion": "gemini-2.0-flash-001"
+                "modelVersion": "stable"
             },
 
             "promptSpec": {
-                "preamble": prompt_preamble
-            },
-
-            "includeCitations": False
+                "preamble": preamble
+            }
         },
 
         "relatedQuestionsSpec": {
             "enable": False
-        },
-
-        "searchSpec": {
-
-            "searchParams": {
-                "maxReturnResults": 8
-            }
         }
     }
-
-    # ─────────────────────────────────────────
-    # TRACK FILTER
-    # ─────────────────────────────────────────
-
-    if track in ("1", "2", "3"):
-
-        payload["searchSpec"]["filter"] = (
-            f'uri: ANY("track{track}")'
-        )
 
     response = requests.post(
         ENDPOINT,
@@ -203,7 +227,11 @@ Always answer in English.
         timeout=60,
     )
 
-    response.raise_for_status()
+    # DEBUG
+    if response.status_code != 200:
+        raise Exception(
+            f"Vertex API Error {response.status_code}: {response.text}"
+        )
 
     data = response.json()
 
@@ -215,9 +243,11 @@ Always answer in English.
 
     return answer, track
 
+
 # ─────────────────────────────────────────────────────────────
 # ROUTES
 # ─────────────────────────────────────────────────────────────
+
 
 @app.route("/", methods=["GET"])
 def index():
@@ -227,12 +257,14 @@ def index():
         "index.html"
     )
 
+
 @app.route("/health", methods=["GET"])
 def health():
 
     return jsonify({
         "status": "ok"
     })
+
 
 @app.route("/chat", methods=["POST"])
 def chat():
@@ -267,17 +299,12 @@ def chat():
         else "en"
     )
 
-    # ─────────────────────────────────────────
     # TRACK FROM UI
-    # ─────────────────────────────────────────
 
     if ui_track in ("1", "2", "3"):
-
         session["track"] = ui_track
 
-    # ─────────────────────────────────────────
-    # TRACK TEXT COMMAND
-    # ─────────────────────────────────────────
+    # TRACK COMMAND
 
     detected_track = detect_track(message)
 
@@ -300,9 +327,7 @@ def chat():
             "language": language,
         })
 
-    # ─────────────────────────────────────────
-    # ANSWER QUERY
-    # ─────────────────────────────────────────
+    # QUERY
 
     try:
 
@@ -317,7 +342,6 @@ def chat():
         app.logger.error(f"Vertex answer error: {e}")
 
         answer = None
-        source_track = None
 
     if not answer:
 
@@ -345,6 +369,7 @@ def chat():
         "language": language,
     })
 
+
 @app.route("/chat/reset", methods=["POST"])
 def reset_chat():
 
@@ -363,6 +388,7 @@ def reset_chat():
     return jsonify({
         "status": "reset"
     })
+
 
 # ─────────────────────────────────────────────────────────────
 # MAIN
