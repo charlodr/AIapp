@@ -11,7 +11,7 @@ from google.auth.transport.requests import Request
 app = Flask(__name__, static_folder="static")
 
 # ─────────────────────────────────────────────────────────────
-# CONFIGURATION
+# CONFIG
 # ─────────────────────────────────────────────────────────────
 
 GCP_PROJECT_ID = os.environ.get(
@@ -46,14 +46,14 @@ TRACKS = {
     "3": "AI for Education and Learning",
 }
 
-# ─────────────────────────────────────────────────────────────
-# SESSION STATE
-# ─────────────────────────────────────────────────────────────
-
 sessions = {}
 
 MAX_HISTORY = 5
 
+
+# ─────────────────────────────────────────────────────────────
+# SESSION
+# ─────────────────────────────────────────────────────────────
 
 def get_session(sid):
 
@@ -83,7 +83,7 @@ def gcp_token():
 
 
 # ─────────────────────────────────────────────────────────────
-# LANGUAGE DETECTION
+# LANGUAGE
 # ─────────────────────────────────────────────────────────────
 
 def is_italian(text):
@@ -95,8 +95,6 @@ def is_italian(text):
         " una ", " sono ",
         "ciao", "grazie",
         "dove", "quando", "come",
-        "cosa", "quale",
-        "riguardo", "pausa"
     ]
 
     lower = " " + text.lower() + " "
@@ -128,95 +126,192 @@ def detect_track(text):
 
 
 # ─────────────────────────────────────────────────────────────
-# CONTRIBUTION DETECTION
+# TITLE CLEANING
 # ─────────────────────────────────────────────────────────────
 
-def detect_contribution(text):
+def clean_title(raw):
 
-    patterns = [
-        r"(?:about|regarding|on)\s+(?:the\s+)?(?:contribution|paper|talk|work)\s+(?:by|from|of)\s+(.+)",
-        r"(?:contribution|paper)\s+(?:by|from)\s+(.+)",
-        r"(?:riguardo|parlami|dimmi)\s+(?:al\s+)?(?:contributo|paper)\s+(?:di|del)\s+(.+)",
-        r"(?:contributo|paper)\s+(?:di|del)\s+(.+)",
-    ]
+    if not raw:
+        return None
 
-    for p in patterns:
+    title = raw
 
-        m = re.search(p, text.lower())
-
-        if m:
-            return m.group(1).strip()
-
-    return None
-
-
-# ─────────────────────────────────────────────────────────────
-# PREAMBLE
-# ─────────────────────────────────────────────────────────────
-
-def build_preamble(language, track=None, contribution_ref=None):
-
-    lang_instruction = (
-        "Respond in Italian."
-        if language == "it"
-        else "Respond in English."
+    title = re.sub(
+        r"^track[123]",
+        "",
+        title,
+        flags=re.IGNORECASE
     )
 
-    track_instruction = ""
+    title = re.sub(
+        r"\.pdf$",
+        "",
+        title,
+        flags=re.IGNORECASE
+    )
 
-    if track:
+    title = re.sub(
+        r"[_\-]+",
+        " ",
+        title
+    )
 
-        track_instruction = (
-            f"The user is interested in Track {track}: "
-            f"{TRACKS[track]}. "
+    title = re.sub(
+        r"([a-z])([A-Z])",
+        r"\1 \2",
+        title
+    )
+
+    title = re.sub(
+        r"\s+",
+        " ",
+        title
+    )
+
+    title = title.strip()
+
+    if title.lower() in [
+        "anonymous",
+        "(anonymous)"
+    ]:
+        return None
+
+    return title
+
+
+# ─────────────────────────────────────────────────────────────
+# SNIPPET CLEANING
+# ─────────────────────────────────────────────────────────────
+
+def clean_snippet(text):
+
+    if not text:
+        return ""
+
+    text = re.sub(
+        r"<[^>]+>",
+        "",
+        text
+    )
+
+    text = re.sub(
+        r"\s+",
+        " ",
+        text
+    )
+
+    text = text.strip()
+
+    # Remove conference noise
+    noise = [
+        "VISIONE Conference June",
+        "Track 1:",
+        "Track 2:",
+        "Track 3:",
+        "Salone d'Onore",
+    ]
+
+    for n in noise:
+        text = text.replace(n, "")
+
+    if len(text) > 260:
+        text = text[:260] + "..."
+
+    return text.strip()
+
+
+# ─────────────────────────────────────────────────────────────
+# QUERY EXPANSION
+# ─────────────────────────────────────────────────────────────
+
+def normalize_query(query):
+
+    q = query.lower()
+
+    mapping = {
+
+        "llm": (
+            "large language models "
+            "architectural design BIM AI"
+        ),
+
+        "hbim": (
+            "HBIM heritage BIM conservation"
+        ),
+
+        "vr": (
+            "virtual reality immersive learning"
+        ),
+
+        "ai": (
+            "artificial intelligence design"
+        ),
+
+        "education": (
+            "education learning pedagogy AI"
+        ),
+
+        "representation": (
+            "architectural representation AI"
+        ),
+    }
+
+    for k, v in mapping.items():
+
+        if q.strip() == k:
+            return v
+
+    return q
+
+
+# ─────────────────────────────────────────────────────────────
+# SYNTHESIS
+# ─────────────────────────────────────────────────────────────
+
+def synthesize(query, docs, language="en"):
+
+    if not docs:
+
+        return (
+            "Non ho trovato risultati rilevanti."
+            if language == "it"
+            else
+            "I couldn't find relevant results."
         )
 
-    contribution_instruction = ""
+    intro = (
+        "The conference includes several relevant contributions related to your query."
+        if language == "en"
+        else
+        "La conferenza include diversi contributi rilevanti rispetto alla tua richiesta."
+    )
 
-    if contribution_ref:
+    body = []
 
-        contribution_instruction = (
-            f"Focus on the contribution related to "
-            f"'{contribution_ref}'. "
+    for d in docs[:4]:
+
+        title = d["title"]
+
+        snippet = d["snippet"]
+
+        text = (
+            f"• {title}\n{snippet}"
         )
+
+        body.append(text)
+
+    outro = (
+        "\n\nThese papers explore different perspectives on AI-assisted design, representation and digital cultural heritage."
+        if language == "en"
+        else
+        "\n\nQuesti contributi esplorano differenti prospettive sull'AI applicata al design, alla rappresentazione e al patrimonio culturale digitale."
+    )
 
     return (
-        "You are the official assistant for the "
-        "VISION_E conference on AI in architecture, "
-        "representation, heritage conservation, "
-        "design and education. "
-
-        "Answer questions ONLY using the indexed "
-        "conference documents. "
-
-        "The available documents include: "
-
-        "ConferenceDay.pdf "
-        "(schedule, coffee breaks, venue, logistics), "
-
-        "ScientificCommittee.pdf, "
-
-        "OrganizingCommittee.pdf, "
-
-        "Logistics.pdf, "
-
-        "track1_*.pdf papers, "
-
-        "track2_*.pdf papers, "
-
-        "track3_*.pdf papers. "
-
-        f"{track_instruction}"
-        f"{contribution_instruction}"
-
-        "When listing papers always include "
-        "title and authors if available. "
-
-        "If information is not available "
-        "inside the conference documents, "
-        "say so briefly. "
-
-        f"{lang_instruction}"
+        intro
+        + "\n\n"
+        + "\n\n".join(body)
+        + outro
     )
 
 
@@ -224,23 +319,20 @@ def build_preamble(language, track=None, contribution_ref=None):
 # VERTEX SEARCH
 # ─────────────────────────────────────────────────────────────
 
-def ask_vertex(query, history, preamble, track=None):
+def ask_vertex(query, track=None, language="en"):
 
     token = gcp_token()
 
+    query = normalize_query(query)
+
     payload = {
         "query": query,
-        "pageSize": 8,
+        "pageSize": 10,
 
         "contentSearchSpec": {
 
             "snippetSpec": {
                 "returnSnippet": True
-            },
-
-            "summarySpec": {
-                "summaryResultCount": 5,
-                "includeCitations": True
             }
         }
     }
@@ -264,11 +356,13 @@ def ask_vertex(query, history, preamble, track=None):
     if not results:
         return None, None
 
-    summaries = []
+    docs = []
+
+    seen_titles = set()
 
     source_track = None
 
-    for r in results[:5]:
+    for r in results:
 
         doc = r.get("document", {})
 
@@ -279,70 +373,42 @@ def ask_vertex(query, history, preamble, track=None):
 
         raw_title = (
             derived.get("title")
-            or doc.get("id", "Untitled")
+            or doc.get("id")
+            or "Untitled"
         )
 
-        title = raw_title
+        title = clean_title(raw_title)
 
-        # CLEAN TRACK PREFIX
-        title = re.sub(
-            r"^track[123]",
-            "",
-            title,
-            flags=re.IGNORECASE
-        )
+        if not title:
+            continue
 
-        # REMOVE PDF
-        title = re.sub(
-            r"\.pdf$",
-            "",
-            title,
-            flags=re.IGNORECASE
-        )
+        if title.lower() in seen_titles:
+            continue
 
-        # CLEAN SYMBOLS
-        title = re.sub(
-            r"[_\-]+",
-            " ",
-            title
-        )
-
-        # SPLIT CAMEL CASE
-        title = re.sub(
-            r"([a-z])([A-Z])",
-            r"\1 \2",
-            title
-        )
-
-        title = title.strip()
+        seen_titles.add(title.lower())
 
         snippets = derived.get(
             "snippets",
             []
         )
 
-        text = ""
+        snippet = ""
 
         if snippets:
 
-            text = snippets[0].get(
+            snippet = snippets[0].get(
                 "snippet",
                 ""
             )
 
-            # REMOVE HTML TAGS
-            text = re.sub(
-                r"<[^>]+>",
-                "",
-                text
-            )
+        snippet = clean_snippet(snippet)
 
-        if len(text) > 220:
-            text = text[:220] + "..."
+        if not snippet:
+            continue
 
-        summaries.append({
+        docs.append({
             "title": title,
-            "snippet": text
+            "snippet": snippet
         })
 
         uri = derived.get(
@@ -355,21 +421,16 @@ def ask_vertex(query, history, preamble, track=None):
             if f"track{t}" in uri.lower():
                 source_track = t
 
-    formatted = []
+    if not docs:
+        return None, None
 
-    for item in summaries:
-
-        formatted.append(
-            f"• {item['title']}\n"
-            f"{item['snippet']}"
-        )
-
-    final_answer = (
-        "Relevant conference contributions found:\n\n"
-        + "\n\n".join(formatted)
+    answer = synthesize(
+        query=query,
+        docs=docs,
+        language=language
     )
 
-    return final_answer, source_track
+    return answer, source_track
 
 
 # ─────────────────────────────────────────────────────────────
@@ -438,12 +499,10 @@ def chat():
         track_name = TRACKS[detected_track]
 
         reply = (
-            f"Track {detected_track} selezionato: "
-            f"{track_name}."
+            f"Track {detected_track} selezionato: {track_name}."
             if language == "it"
             else
-            f"Track {detected_track} selected: "
-            f"{track_name}."
+            f"Track {detected_track} selected: {track_name}."
         )
 
         return jsonify({
@@ -452,50 +511,12 @@ def chat():
             "language": language,
         })
 
-    contribution_ref = detect_contribution(message)
-
-    preamble = build_preamble(
-        language=language,
-        track=session.get("track"),
-        contribution_ref=contribution_ref,
-    )
-
-    query = message.strip().rstrip(
-        string.punctuation + " "
-    ).lower()
-
-    if len(query) <= 5 and not any(c.isspace() for c in query):
-
-        query = (
-            f"conference papers and contributions about {query}"
-        )
-
-    it_en = {
-        "pausa caffè": "coffee break",
-        "pausa caffe": "coffee break",
-        "pranzo": "lunch",
-        "programma": "conference schedule",
-        "orari": "conference timetable",
-        "sede": "venue location",
-        "contributi": "conference papers",
-        "relatori": "speakers",
-        "comitato scientifico": "scientific committee",
-        "comitato organizzativo": "organizing committee",
-        "cena": "social dinner",
-    }
-
-    for it, en in it_en.items():
-
-        if it in query:
-            query = query.replace(it, en)
-
     try:
 
         answer, source_track = ask_vertex(
-            query=query,
-            history=session["history"],
-            preamble=preamble,
+            query=message,
             track=session.get("track"),
+            language=language
         )
 
     except Exception as e:
@@ -508,12 +529,10 @@ def chat():
     if not answer:
 
         reply = (
-            "Non ho trovato informazioni rilevanti "
-            "nei documenti della conferenza."
+            "Non ho trovato informazioni rilevanti nei documenti della conferenza."
             if language == "it"
             else
-            "I couldn't find relevant information "
-            "in the conference documents."
+            "I couldn't find relevant information in the conference documents."
         )
 
     else:
