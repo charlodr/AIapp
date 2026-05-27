@@ -449,10 +449,10 @@ def ask_vertex(query, track=None, language="en"):
 
     token = gcp_token()
 
-    query = normalize_query(query)
+    normalized_query = normalize_query(query)
 
     payload = {
-        "query": query,
+        "query": normalized_query,
         "pageSize": 10,
 
         "contentSearchSpec": {
@@ -461,16 +461,6 @@ def ask_vertex(query, track=None, language="en"):
             }
         }
     }
-
-    # ─────────────────────────────────────────
-    # TRACK FILTER
-    # ─────────────────────────────────────────
-
-    if track in ("1", "2", "3"):
-
-        payload["filter"] = (
-            f'uri: ANY("track{track}")'
-        )
 
     response = requests.post(
         ENDPOINT,
@@ -531,6 +521,31 @@ def ask_vertex(query, track=None, language="en"):
         if not snippet:
             continue
 
+        uri = (
+            derived.get("link", "")
+            or derived.get("uri", "")
+            or ""
+        ).lower()
+
+        # ─────────────────────────────────────
+        # SAFE TRACK FILTER
+        # ─────────────────────────────────────
+
+        if track in ("1", "2", "3"):
+
+            # allow if uri OR title references track
+            raw_combined = (
+                raw_title.lower()
+                + " "
+                + uri
+                + " "
+                + snippet.lower()
+            )
+
+            if f"track {track}" not in raw_combined and \
+               f"track{track}" not in raw_combined:
+                continue
+
         title = extract_title(
             raw_title,
             snippet
@@ -538,24 +553,6 @@ def ask_vertex(query, track=None, language="en"):
 
         if not title:
             continue
-
-        # ─────────────────────────────────────
-        # HARD TRACK VALIDATION
-        # ─────────────────────────────────────
-
-        uri = derived.get(
-            "link",
-            ""
-        ).lower()
-
-        if track:
-
-            if f"track{track}" not in uri:
-                continue
-
-        # ─────────────────────────────────────
-        # DEDUP
-        # ─────────────────────────────────────
 
         if title.lower() in seen_titles:
             continue
@@ -659,6 +656,10 @@ def chat():
         else "en"
     )
 
+    # ─────────────────────────────────────────
+    # TRACK SELECTION
+    # ─────────────────────────────────────────
+
     if ui_track in ("1", "2", "3"):
         session["track"] = ui_track
 
@@ -682,6 +683,10 @@ def chat():
             "track": detected_track,
             "language": language,
         })
+
+    # ─────────────────────────────────────────
+    # QUERY
+    # ─────────────────────────────────────────
 
     try:
 
