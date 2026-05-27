@@ -32,7 +32,7 @@ else:
     api_host = f"{GCP_LOCATION}-discoveryengine.googleapis.com"
 
 ENDPOINT = (
-    f"https://{api_host}/v1alpha/projects/"
+    f"https://{api_host}/v1/projects/"
     f"{GCP_PROJECT_ID}/locations/{GCP_LOCATION}/collections/default_collection/"
     f"dataStores/{DATASTORE_ID}/servingConfigs/default_search:answer"
 )
