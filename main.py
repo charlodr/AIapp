@@ -456,12 +456,21 @@ def ask_vertex(query, track=None, language="en"):
         "pageSize": 10,
 
         "contentSearchSpec": {
-
             "snippetSpec": {
                 "returnSnippet": True
             }
         }
     }
+
+    # ─────────────────────────────────────────
+    # TRACK FILTER
+    # ─────────────────────────────────────────
+
+    if track in ("1", "2", "3"):
+
+        payload["filter"] = (
+            f'uri: ANY("track{track}")'
+        )
 
     response = requests.post(
         ENDPOINT,
@@ -486,7 +495,7 @@ def ask_vertex(query, track=None, language="en"):
 
     seen_titles = set()
 
-    source_track = None
+    source_track = track
 
     for r in results:
 
@@ -530,6 +539,24 @@ def ask_vertex(query, track=None, language="en"):
         if not title:
             continue
 
+        # ─────────────────────────────────────
+        # HARD TRACK VALIDATION
+        # ─────────────────────────────────────
+
+        uri = derived.get(
+            "link",
+            ""
+        ).lower()
+
+        if track:
+
+            if f"track{track}" not in uri:
+                continue
+
+        # ─────────────────────────────────────
+        # DEDUP
+        # ─────────────────────────────────────
+
         if title.lower() in seen_titles:
             continue
 
@@ -540,18 +567,13 @@ def ask_vertex(query, track=None, language="en"):
             "snippet": snippet
         })
 
-        uri = derived.get(
-            "link",
-            ""
-        )
-
-        for t in ("1", "2", "3"):
-
-            if f"track{t}" in uri.lower():
-                source_track = t
-
     if not docs:
         return None, None
+
+    # ─────────────────────────────────────────
+    # SIMPLE → LOCAL
+    # COMPLEX → GEMINI
+    # ─────────────────────────────────────────
 
     if is_complex_query(query):
 
