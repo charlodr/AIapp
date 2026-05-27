@@ -1,0 +1,103 @@
+[debug] [2026-05-27T11:45:41.558Z] ----------------------------------------------------------------------
+[debug] [2026-05-27T11:45:41.561Z] Command:       /usr/local/nvm/versions/node/v24.15.0/bin/node /usr/local/node_packages/node_modules/.bin/firebase init hosting
+[debug] [2026-05-27T11:45:41.561Z] CLI Version:   15.17.0
+[debug] [2026-05-27T11:45:41.562Z] Platform:      linux
+[debug] [2026-05-27T11:45:41.562Z] Node Version:  v24.15.0
+[debug] [2026-05-27T11:45:41.562Z] Time:          Wed May 27 2026 11:45:41 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-05-27T11:45:41.562Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /home/visioneuid/AIapp
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[debug] [2026-05-27T11:46:03.495Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-05-27T11:46:03.496Z] > authorizing via signed-in user (visioneuid@gmail.com)
+[debug] [2026-05-27T11:46:03.498Z] Checked if tokens are valid: true, expires at: 1779885899502
+[debug] [2026-05-27T11:46:03.498Z] Checked if tokens are valid: true, expires at: 1779885899502
+[debug] [2026-05-27T11:46:03.500Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/availableProjects pageSize=100
+[debug] [2026-05-27T11:46:03.500Z] >>> [apiv2][(partial)header] GET https://firebase.googleapis.com/v1beta1/availableProjects  x-goog-user-project=chatbot-visione-497608
+[debug] [2026-05-27T11:46:03.592Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/availableProjects 403
+[debug] [2026-05-27T11:46:03.593Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/availableProjects [omitted]
+[debug] [2026-05-27T11:46:03.593Z] Request to https://firebase.googleapis.com/v1beta1/availableProjects?pageSize=100 had HTTP Error: 403, Firebase Management API has not been used in project chatbot-visione-497608 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firebase.googleapis.com/overview?project=chatbot-visione-497608 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+[debug] [2026-05-27T11:46:03.594Z] FirebaseError: Request to https://firebase.googleapis.com/v1beta1/availableProjects?pageSize=100 had HTTP Error: 403, Firebase Management API has not been used in project chatbot-visione-497608 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firebase.googleapis.com/overview?project=chatbot-visione-497608 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+    at responseToError (/usr/local/node_packages/node_modules/firebase-tools/lib/responseToError.js:53:12)
+    at RetryOperation._fn (/usr/local/node_packages/node_modules/firebase-tools/lib/apiv2.js:333:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+[error] 
+[error] Error: Failed to list available Google Cloud Platform projects. See firebase-debug.log for more info.
+[debug] [2026-05-27T11:46:11.148Z] ----------------------------------------------------------------------
+[debug] [2026-05-27T11:46:11.150Z] Command:       /usr/local/nvm/versions/node/v24.15.0/bin/node /usr/local/node_packages/node_modules/.bin/firebase init hosting
+[debug] [2026-05-27T11:46:11.151Z] CLI Version:   15.17.0
+[debug] [2026-05-27T11:46:11.151Z] Platform:      linux
+[debug] [2026-05-27T11:46:11.151Z] Node Version:  v24.15.0
+[debug] [2026-05-27T11:46:11.151Z] Time:          Wed May 27 2026 11:46:11 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-05-27T11:46:11.152Z] ----------------------------------------------------------------------
+[debug] 
+[info] 
+     ######## #### ########  ######## ########     ###     ######  ########
+     ##        ##  ##     ## ##       ##     ##  ##   ##  ##       ##
+     ######    ##  ########  ######   ########  #########  ######  ######
+     ##        ##  ##    ##  ##       ##     ## ##     ##       ## ##
+     ##       #### ##     ## ######## ########  ##     ##  ######  ########
+
+You're about to initialize a Firebase project in this directory:
+
+  /home/visioneuid/AIapp
+
+[info] 
+=== Project Setup
+[info] 
+[info] First, let's associate this project directory with a Firebase project.
+[info] You can create multiple project aliases by running firebase use --add, 
+[info] 
+[debug] [2026-05-27T11:46:13.640Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-05-27T11:46:13.641Z] > authorizing via signed-in user (visioneuid@gmail.com)
+[debug] [2026-05-27T11:46:13.642Z] Checked if tokens are valid: true, expires at: 1779885899502
+[debug] [2026-05-27T11:46:13.643Z] Checked if tokens are valid: true, expires at: 1779885899502
+[debug] [2026-05-27T11:46:13.644Z] >>> [apiv2][query] GET https://firebase.googleapis.com/v1beta1/projects pageSize=100
+[debug] [2026-05-27T11:46:13.644Z] >>> [apiv2][(partial)header] GET https://firebase.googleapis.com/v1beta1/projects  x-goog-user-project=chatbot-visione-497608
+[debug] [2026-05-27T11:46:13.730Z] <<< [apiv2][status] GET https://firebase.googleapis.com/v1beta1/projects 403
+[debug] [2026-05-27T11:46:13.731Z] <<< [apiv2][body] GET https://firebase.googleapis.com/v1beta1/projects [omitted]
+[debug] [2026-05-27T11:46:13.732Z] Request to https://firebase.googleapis.com/v1beta1/projects?pageSize=100 had HTTP Error: 403, Firebase Management API has not been used in project chatbot-visione-497608 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firebase.googleapis.com/overview?project=chatbot-visione-497608 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+[debug] [2026-05-27T11:46:13.733Z] FirebaseError: Request to https://firebase.googleapis.com/v1beta1/projects?pageSize=100 had HTTP Error: 403, Firebase Management API has not been used in project chatbot-visione-497608 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firebase.googleapis.com/overview?project=chatbot-visione-497608 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+    at responseToError (/usr/local/node_packages/node_modules/firebase-tools/lib/responseToError.js:53:12)
+    at RetryOperation._fn (/usr/local/node_packages/node_modules/firebase-tools/lib/apiv2.js:333:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+[error] 
+[error] Error: Failed to list Firebase projects. See firebase-debug.log for more info.
+[debug] [2026-05-27T11:47:02.116Z] ----------------------------------------------------------------------
+[debug] [2026-05-27T11:47:02.119Z] Command:       /usr/local/nvm/versions/node/v24.15.0/bin/node /usr/local/node_packages/node_modules/.bin/firebase projects:addfirebase chatbot-visione-497608
+[debug] [2026-05-27T11:47:02.119Z] CLI Version:   15.17.0
+[debug] [2026-05-27T11:47:02.119Z] Platform:      linux
+[debug] [2026-05-27T11:47:02.120Z] Node Version:  v24.15.0
+[debug] [2026-05-27T11:47:02.120Z] Time:          Wed May 27 2026 11:47:02 GMT+0000 (Coordinated Universal Time)
+[debug] [2026-05-27T11:47:02.124Z] ----------------------------------------------------------------------
+[debug] 
+[debug] [2026-05-27T11:47:02.132Z] > command requires scopes: ["email","openid","https://www.googleapis.com/auth/cloudplatformprojects.readonly","https://www.googleapis.com/auth/firebase","https://www.googleapis.com/auth/cloud-platform"]
+[debug] [2026-05-27T11:47:02.133Z] > authorizing via signed-in user (visioneuid@gmail.com)
+[debug] [2026-05-27T11:47:02.140Z] Checked if tokens are valid: true, expires at: 1779885899502
+[debug] [2026-05-27T11:47:02.140Z] Checked if tokens are valid: true, expires at: 1779885899502
+[debug] [2026-05-27T11:47:02.142Z] >>> [apiv2][query] POST https://firebase.googleapis.com/v1beta1/projects/chatbot-visione-497608:addFirebase [none]
+[debug] [2026-05-27T11:47:02.143Z] >>> [apiv2][(partial)header] POST https://firebase.googleapis.com/v1beta1/projects/chatbot-visione-497608:addFirebase  x-goog-user-project=chatbot-visione-497608
+[debug] [2026-05-27T11:47:02.250Z] <<< [apiv2][status] POST https://firebase.googleapis.com/v1beta1/projects/chatbot-visione-497608:addFirebase 403
+[debug] [2026-05-27T11:47:02.251Z] <<< [apiv2][body] POST https://firebase.googleapis.com/v1beta1/projects/chatbot-visione-497608:addFirebase {"error":{"code":403,"message":"Firebase Management API has not been used in project chatbot-visione-497608 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firebase.googleapis.com/overview?project=chatbot-visione-497608 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com","metadata":{"service":"firebase.googleapis.com","consumer":"projects/chatbot-visione-497608","activationUrl":"https://console.developers.google.com/apis/api/firebase.googleapis.com/overview?project=chatbot-visione-497608","containerInfo":"chatbot-visione-497608","serviceTitle":"Firebase Management API"}},{"@type":"type.googleapis.com/google.rpc.LocalizedMessage","locale":"en-US","message":"Firebase Management API has not been used in project chatbot-visione-497608 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firebase.googleapis.com/overview?project=chatbot-visione-497608 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry."},{"@type":"type.googleapis.com/google.rpc.Help","links":[{"description":"Google developers console API activation","url":"https://console.developers.google.com/apis/api/firebase.googleapis.com/overview?project=chatbot-visione-497608"}]}]}}
+[debug] [2026-05-27T11:47:02.252Z] Request to https://firebase.googleapis.com/v1beta1/projects/chatbot-visione-497608:addFirebase had HTTP Error: 403, Firebase Management API has not been used in project chatbot-visione-497608 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firebase.googleapis.com/overview?project=chatbot-visione-497608 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+[debug] [2026-05-27T11:47:02.255Z] FirebaseError: Request to https://firebase.googleapis.com/v1beta1/projects/chatbot-visione-497608:addFirebase had HTTP Error: 403, Firebase Management API has not been used in project chatbot-visione-497608 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/firebase.googleapis.com/overview?project=chatbot-visione-497608 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.
+    at responseToError (/usr/local/node_packages/node_modules/firebase-tools/lib/responseToError.js:53:12)
+    at RetryOperation._fn (/usr/local/node_packages/node_modules/firebase-tools/lib/apiv2.js:333:77)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+[error] 
+[error] Error: Failed to add Firebase to Google Cloud Platform project. See firebase-debug.log for more info.
