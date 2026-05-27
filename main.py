@@ -35,10 +35,12 @@ if GCP_LOCATION == "global":
 else:
     api_host = f"{GCP_LOCATION}-discoveryengine.googleapis.com"
 
+# IMPORTANT:
+# USING SEARCH API INSTEAD OF ANSWER API
 ENDPOINT = (
     f"https://{api_host}/v1/projects/"
     f"{GCP_PROJECT_ID}/locations/{GCP_LOCATION}/collections/default_collection/"
-    f"dataStores/{DATASTORE_ID}/servingConfigs/default_search:answer"
+    f"dataStores/{DATASTORE_ID}/servingConfigs/default_search:search"
 )
 
 TRACKS = {
@@ -170,8 +172,6 @@ def build_preamble(language, track=None, contribution_ref=None):
         track_instruction = (
             f"The user is interested in Track {track}: "
             f"{TRACKS[track]}. "
-            f"Prioritize documents whose filename "
-            f"contains 'track{track}'. "
         )
 
     contribution_instruction = ""
@@ -224,75 +224,33 @@ def build_preamble(language, track=None, contribution_ref=None):
 
 
 # ─────────────────────────────────────────────────────────────
-# VERTEX AI SEARCH
+# VERTEX SEARCH
 # ─────────────────────────────────────────────────────────────
 
 def ask_vertex(query, history, preamble, track=None):
 
     token = gcp_token()
 
-    turns = [
-        {
-            "userInput": {
-                "query": {
-                    "text": t["user"]
-                }
-            },
-            "reply": {
-                "summary": {
-                    "summaryText": t["assistant"]
-                }
-            }
-        }
-        for t in history[-MAX_HISTORY:]
-    ]
-
-    filter_expr = ""
-
-    if track:
-        filter_expr = f'uri: ANY("track{track}")'
-
     payload = {
+        "query": query,
+        "pageSize": 8,
 
-        "query": {
-            "text": query
-        },
+        "contentSearchSpec": {
 
-        "relatedQuestionsSpec": {
-            "enable": False
-        },
-
-        "answerGenerationSpec": {
-
-            "ignoreAdversarialQuery": True,
-            "ignoreNonAnswerSeekingQuery": False,
-            "ignoreLowRelevantContent": False,
-
-            "modelSpec": {
-                "modelVersion": "stable"
+            "snippetSpec": {
+                "returnSnippet": True
             },
 
-            "promptSpec": {
-                "preamble": preamble
-            },
-
-            "includeCitations": True,
-            "answerLanguageCode": "en",
-        },
-
-        "searchSpec": {
-            "searchResultMode": "DOCUMENTS"
+            "summarySpec": {
+                "summaryResultCount": 5,
+                "includeCitations": True
+            }
         }
     }
 
-    if filter_expr:
-        payload["searchSpec"]["filter"] = filter_expr
-
-    if turns:
-
-        payload["conversationContext"] = {
-            "queryHistory": turns
-        }
+    # IMPORTANT:
+    # TRACK FILTER DISABLED FOR DEBUGGING
+    # Re-enable later if retrieval works correctly
 
     response = requests.post(
         ENDPOINT,
@@ -308,95 +266,63 @@ def ask_vertex(query, history, preamble, track=None):
 
     data = response.json()
 
-    answer_obj = data.get("answer", {})
+    results = data.get("results", [])
 
-    answer = answer_obj.get(
-        "answerText",
-        ""
-    ).strip()
+    if not results:
+        return None, None
 
-    refs = answer_obj.get(
-        "references",
-        []
-    )
+    summaries = []
 
     source_track = None
 
-    for ref in refs:
+    for r in results[:5]:
 
-        uri = ref.get(
-            "unstructuredDocumentInfo",
+        doc = r.get("document", {})
+
+        derived = doc.get(
+            "derivedStructData",
             {}
-        ).get(
-            "uri",
+        )
+
+        title = (
+            derived.get("title")
+            or doc.get("id", "Untitled")
+        )
+
+        snippets = derived.get(
+            "snippets",
+            []
+        )
+
+        text = ""
+
+        if snippets:
+
+            text = snippets[0].get(
+                "snippet",
+                ""
+            )
+
+        summaries.append(
+            f"• {title}\n{text}"
+        )
+
+        uri = derived.get(
+            "link",
             ""
         )
 
         for t in ("1", "2", "3"):
 
-            if f"track{t}" in uri:
+            if f"track{t}" in uri.lower():
                 source_track = t
-                break
 
-        if source_track:
-            break
+    final_answer = (
+        "Relevant conference contributions found:\n\n"
+        + "\n\n".join(summaries)
+    )
 
-    # Fallback from refs
-    if not answer and refs:
-
-        titles = []
-
-        for ref in refs[:5]:
-
-            info = ref.get(
-                "unstructuredDocumentInfo",
-                {}
-            )
-
-            title = (
-                info.get("title")
-                or info.get("uri", "")
-                .split("/")[-1]
-                .replace("_", " ")
-                .replace(".pdf", "")
-            )
-
-            chunk = ""
-
-            chunks = info.get(
-                "chunkContents",
-                []
-            )
-
-            if chunks:
-                chunk = chunks[0].get(
-                    "content",
-                    ""
-                )
-
-            if title:
-
-                if chunk:
-
-                    titles.append(
-                        f"- **{title}**: {chunk[:180]}..."
-                    )
-
-                else:
-
-                    titles.append(
-                        f"- **{title}**"
-                    )
-
-        if titles:
-
-            answer = (
-                "Based on the conference documents, "
-                "relevant contributions include:\n\n"
-                + "\n".join(titles)
-            )
-
-    return answer or None, source_track
+    return final_answer, source_track
 
 
 # ─────────────────────────────────────────────────────────────
@@ -453,11 +379,11 @@ def chat():
         else "en"
     )
 
-    # UI selection wins
+    # UI track selection
     if ui_track in ("1", "2", "3"):
         session["track"] = ui_track
 
-    # Typed selection
+    # Typed track selection
     detected_track = detect_track(message)
 
     if detected_track:
@@ -500,7 +426,7 @@ def chat():
             f"conference papers and contributions about {query}"
         )
 
-    # Italian → English semantic normalization
+    # Italian semantic normalization
     it_en = {
         "pausa caffè": "coffee break",
         "pausa caffe": "coffee break",
@@ -540,13 +466,11 @@ def chat():
 
         reply = (
             "Non ho trovato informazioni rilevanti "
-            "nei documenti della conferenza. "
-            "Prova a riformulare."
+            "nei documenti della conferenza."
             if language == "it"
             else
             "I couldn't find relevant information "
-            "in the conference documents. "
-            "Try rephrasing your question."
+            "in the conference documents."
         )
 
     else:
