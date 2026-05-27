@@ -32,6 +32,137 @@ TRACKS = {
 sessions = {}
 MAX_HISTORY = 5
 
+# ─────────────────────────────────────────────────────────────
+# STATIC LOGISTICS — answered directly without Vertex AI
+# ─────────────────────────────────────────────────────────────
+
+LOGISTICS = {
+    "coffee_break": {
+        "en": (
+            "There are two coffee breaks during the conference:\n"
+            "\u2022 First coffee break: **11:05 \u2013 11:35**\n"
+            "\u2022 Second coffee break: **15:40 \u2013 16:10**"
+        ),
+        "it": (
+            "Ci sono due pause caff\u00e8 durante la conferenza:\n"
+            "\u2022 Prima pausa caff\u00e8: **11:05 \u2013 11:35**\n"
+            "\u2022 Seconda pausa caff\u00e8: **15:40 \u2013 16:10**"
+        ),
+    },
+    "lunch": {
+        "en": "**Light lunch** is served from **13:00 to 14:00**.",
+        "it": "Il **pranzo leggero** \u00e8 servito dalle **13:00 alle 14:00**.",
+    },
+    "social_dinner": {
+        "en": (
+            "The informal social dinner takes place on the evening of June 5th at\n"
+            "**Al Pero \u2013 Imbarco sul Po**\n"
+            "Located just behind Castello del Valentino, with a view over the Po River. "
+            "Within easy walking distance from the venue.\n"
+            "Website: imbarcoalpero.com\n"
+            "For info: visioneuid@gmail.com"
+        ),
+        "it": (
+            "La cena sociale informale si svolge la sera del 5 giugno presso\n"
+            "**Al Pero \u2013 Imbarco sul Po**\n"
+            "Si trova appena dietro il Castello del Valentino, con vista sul Po. "
+            "A pochi minuti a piedi dalla sede.\n"
+            "Website: imbarcoalpero.com\n"
+            "Per info: visioneuid@gmail.com"
+        ),
+    },
+    "venue": {
+        "en": (
+            "**Salone d'Onore (Great Salon), Castello del Valentino**\n"
+            "Department of Architecture and Design, Politecnico di Torino\n"
+            "Viale Mattioli 39, 10125 Turin, Italy\n"
+            "Website: castellodelvalentino.polito.it\n\n"
+            "**How to reach the venue:**\n"
+            "\u2022 By metro: Line 1, station Dante or Re Umberto\n"
+            "\u2022 By tram: Lines 9, 16 \u2014 stop Valentino\n"
+            "\u2022 By taxi: ask for Viale Mattioli 39, Castello del Valentino"
+        ),
+        "it": (
+            "**Salone d'Onore, Castello del Valentino**\n"
+            "Dipartimento di Architettura e Design, Politecnico di Torino\n"
+            "Viale Mattioli 39, 10125 Torino\n"
+            "Website: castellodelvalentino.polito.it\n\n"
+            "**Come raggiungere la sede:**\n"
+            "\u2022 Metro: Linea 1, fermata Dante o Re Umberto\n"
+            "\u2022 Tram: Linee 9, 16 \u2014 fermata Valentino\n"
+            "\u2022 Taxi: Viale Mattioli 39, Castello del Valentino"
+        ),
+    },
+    "contact": {
+        "en": "For any questions contact the Organizing Committee: **visioneuid@gmail.com**",
+        "it": "Per qualsiasi domanda contatta il Comitato Organizzativo: **visioneuid@gmail.com**",
+    },
+    "registration": {
+        "en": "Registration is from **08:30 to 09:00**.",
+        "it": "La registrazione \u00e8 dalle **08:30 alle 09:00**.",
+    },
+    "opening": {
+        "en": "The conference opening ceremony is at **09:00**.",
+        "it": "La cerimonia di apertura della conferenza \u00e8 alle **09:00**.",
+    },
+    "awards": {
+        "en": "**Best Paper Awards** ceremony is at **18:15**, followed by closing remarks at **18:20**.",
+        "it": "La cerimonia **Best Paper Awards** \u00e8 alle **18:15**, seguita dalle conclusioni alle **18:20**.",
+    },
+    "round_table": {
+        "en": "The **Final Round Table** is from **17:15 to 18:15**.",
+        "it": "La **tavola rotonda finale** \u00e8 dalle **17:15 alle 18:15**.",
+    },
+}
+
+LOGISTICS_TRIGGERS = {
+    "coffee_break": [
+        "coffee break", "coffee", "coffe break", "coffe", "caff",
+        "pausa caff", "break time", "coffee time",
+    ],
+    "lunch": [
+        "lunch", "pranzo", "light lunch", "pausa pranzo", "lunch break",
+    ],
+    "social_dinner": [
+        "social dinner", "dinner", "cena", "al pero", "imbarco",
+        "evening", "serata",
+    ],
+    "venue": [
+        "venue", "location", "address", "where", "sede", "indirizzo",
+        "dove si tiene", "castello", "valentino", "viale mattioli",
+        "how to get", "come arrivare", "dove",
+    ],
+    "contact": [
+        "contact", "email", "contatto", "contattare", "write to",
+        "get in touch",
+    ],
+    "registration": [
+        "registration", "registrazione", "sign in", "check in",
+        "when do i register",
+    ],
+    "opening": [
+        "opening", "apertura", "when does it start", "what time start",
+        "quando inizia", "start time",
+    ],
+    "awards": [
+        "award", "premio", "best paper", "closing", "chiusura",
+    ],
+    "round_table": [
+        "round table", "tavola rotonda", "roundtable",
+    ],
+}
+
+
+def check_logistics(text, language):
+    """Return static answer if query matches a logistics topic."""
+    lower = text.lower().strip()
+    for key, triggers in LOGISTICS_TRIGGERS.items():
+        if any(t in lower for t in triggers):
+            return LOGISTICS[key][language]
+    return None
+
+
+
 
 def get_session(sid):
     if sid not in sessions:
@@ -82,7 +213,7 @@ def build_preamble(language, track=None):
         "June 5th 2026 at Castello del Valentino, Turin. "
         "Answer using only the indexed conference documents. "
         "The available documents are: "
-        "ConferenceDay.pdf (full schedule, timetable, coffee breaks, lunch, venue, cronoprogram), "
+        "ConferenceDay.pdf (the conference programme and cronoprogram — NOT an academic paper; use it for session times, keynote slots, track session schedules and timing of presentations), "
         "ScientificCommittee.pdf (scientific committee members and affiliations), "
         "OrganizingCommittee.pdf (organizing committee members), "
         "Logistics.pdf (venue address, social dinner at Al Pero, contact email), "
@@ -92,7 +223,10 @@ def build_preamble(language, track=None):
         "IMPORTANT RESPONSE RULES: "
         "1. For logistical questions (coffee break, lunch, schedule, venue, social dinner, "
         "wifi, address, timing, registration, opening, closing, awards) — answer with ONLY "
-        "the essential facts. No paper citations. No track descriptions. Maximum 3 sentences. "
+        "the essential facts in 1-3 sentences maximum. "
+        "NEVER mention papers, contributions or research topics in logistical answers. "
+        "NEVER add sentences like 'there are no papers about this topic'. "
+        "For contact information always refer to the Organizing Committee at visioneuid@gmail.com. "
         "2. For questions about papers, contributions, authors or research topics — provide "
         "complete and detailed answers including titles and authors. "
         "3. When listing papers always include title and authors. "
@@ -114,15 +248,24 @@ def ask_vertex(query, track=None, language="en"):
     list_triggers = [
         "list all papers", "list papers", "all papers", "all contributions",
         "papers in track", "contributions in track", "papers and authors",
-        "elenca i paper", "elenca i contributi", "tutti i paper",
+        "what are the papers", "elenca i paper", "elenca i contributi", "tutti i paper",
     ]
     lower_q = query.lower()
     if any(t in lower_q for t in list_triggers):
-        if track:
+        # Always use track context if available — never list all tracks together
+        effective_track = track
+        # Try to detect track number from query itself
+        import re
+        m = re.search(r'track[\s]*([123])', lower_q)
+        if m:
+            effective_track = m.group(1)
+        if effective_track:
+            track_name = TRACKS[effective_track]
             query = (
-                f"What are all the papers and their authors in Track {track} "
-                f"({TRACKS[track]}) of the VISION_E conference? "
-                f"List each paper title and author."
+                f"What are all the papers and their authors in Track {effective_track} "
+                f"({track_name}) of the VISION_E conference? "
+                f"List only the papers from track{effective_track}_*.pdf documents. "
+                f"Include each paper title and author."
             )
         else:
             query = (
@@ -201,6 +344,15 @@ def chat():
             else f"Track {detected} selected: **{name}**."
         )
         return jsonify({"answer": reply, "track": detected, "language": language})
+
+    # Check static logistics first — no need to call Vertex AI
+    logistics_answer = check_logistics(message, language)
+    if logistics_answer:
+        return jsonify({
+            "answer": logistics_answer,
+            "track": session.get("track"),
+            "language": language,
+        })
 
     try:
         answer = ask_vertex(
