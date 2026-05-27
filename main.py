@@ -1,6 +1,3 @@
-# Revised `main.py` — Optimized Conference Bot (Vertex AI Search + Flask)
-
-```python
 import os
 import requests
 from flask import Flask, request, jsonify, send_from_directory
@@ -9,16 +6,33 @@ from google.auth.transport.requests import Request
 
 app = Flask(__name__, static_folder="static")
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # CONFIGURATION
-# ──────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 
-GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "chatbot-visione")
-GCP_LOCATION   = os.environ.get("GCP_LOCATION", "eu")
-DATASTORE_ID   = os.environ.get("DATASTORE_ID", "atlascardone_1773418764471")
+GCP_PROJECT_ID = os.environ.get(
+    "GCP_PROJECT_ID",
+    "chatbot-visione-497608"
+)
+
+GCP_LOCATION = os.environ.get(
+    "GCP_LOCATION",
+    "global"
+)
+
+DATASTORE_ID = os.environ.get(
+    "DATASTORE_ID",
+    "visionedatastore_1779872407393"
+)
+
+# IMPORTANT FIX FOR GLOBAL DATASTORE
+if GCP_LOCATION == "global":
+    api_host = "discoveryengine.googleapis.com"
+else:
+    api_host = f"{GCP_LOCATION}-discoveryengine.googleapis.com"
 
 ENDPOINT = (
-    f"https://{GCP_LOCATION}-discoveryengine.googleapis.com/v1alpha/projects/"
+    f"https://{api_host}/v1alpha/projects/"
     f"{GCP_PROJECT_ID}/locations/{GCP_LOCATION}/collections/default_collection/"
     f"dataStores/{DATASTORE_ID}/servingConfigs/default_search:answer"
 )
@@ -29,9 +43,9 @@ TRACKS = {
     "3": "AI for Education and Learning",
 }
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # SESSION STATE
-# ──────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 
 sessions = {}
 
@@ -41,30 +55,37 @@ def get_session(session_id):
         sessions[session_id] = {
             "track": None,
         }
+
     return sessions[session_id]
 
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # AUTH
-# ──────────────────────────────────────────────────────────────────────────────
-
+# ─────────────────────────────────────────────────────────────
 
 def gcp_token():
-    creds, _ = default(scopes=["https://www.googleapis.com/auth/cloud-platform"])
+
+    creds, _ = default(
+        scopes=["https://www.googleapis.com/auth/cloud-platform"]
+    )
+
     creds.refresh(Request())
+
     return creds.token
 
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # LANGUAGE DETECTION
-# ──────────────────────────────────────────────────────────────────────────────
-
+# ─────────────────────────────────────────────────────────────
 
 def is_italian(text):
+
     markers = [
-        " il ", " la ", " le ", " gli ", " del ", " della ",
-        " che ", " non ", " per ", " con ", " una ",
-        "ciao", "grazie", "dove", "quando", "come", "cosa",
+        " il ", " la ", " le ", " gli ",
+        " del ", " della ", " che ",
+        " non ", " per ", " con ",
+        " una ", "ciao", "grazie",
+        "dove", "quando", "come", "cosa",
     ]
 
     lower = " " + text.lower() + " "
@@ -72,12 +93,12 @@ def is_italian(text):
     return sum(1 for m in markers if m in lower) >= 2
 
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # TRACK DETECTION
-# ──────────────────────────────────────────────────────────────────────────────
-
+# ─────────────────────────────────────────────────────────────
 
 def detect_track(text):
+
     clean = text.strip().lower()
 
     valid = {
@@ -95,10 +116,9 @@ def detect_track(text):
     return valid.get(clean)
 
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # PREAMBLE
-# ──────────────────────────────────────────────────────────────────────────────
-
+# ─────────────────────────────────────────────────────────────
 
 def build_preamble(language, track=None):
 
@@ -112,25 +132,29 @@ def build_preamble(language, track=None):
 
     if track:
         track_instruction = (
-            f"The user is interested in Track {track}: {TRACKS[track]}. "
-            f"Prioritize documents whose filename starts with track{track}_. "
+            f"The user is interested in Track {track}: "
+            f"{TRACKS[track]}. "
+            f"Prioritize documents whose filename "
+            f"starts with track{track}_. "
         )
 
     return (
-        "You are the official assistant of the VISION_E conference. "
+        "You are the official assistant of the "
+        "VISION_E conference. "
         "Answer using only the indexed conference documents. "
         "Be accurate, informative and concise. "
-        "When mentioning papers, include title and authors when available. "
-        "If information is unavailable in the documents, say so briefly. "
+        "When mentioning papers, include title and authors "
+        "when available. "
+        "If information is unavailable in the documents, "
+        "say so briefly. "
         f"{track_instruction}"
         f"{lang_instruction}"
     )
 
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # VERTEX AI SEARCH
-# ──────────────────────────────────────────────────────────────────────────────
-
+# ─────────────────────────────────────────────────────────────
 
 def ask_vertex(query, preamble, track=None):
 
@@ -148,6 +172,7 @@ def ask_vertex(query, preamble, track=None):
         },
 
         "answerGenerationSpec": {
+
             "modelSpec": {
                 "modelVersion": "stable"
             },
@@ -157,10 +182,6 @@ def ask_vertex(query, preamble, track=None):
             },
 
             "includeCitations": True,
-
-            # IMPORTANT:
-            # Let language follow prompt naturally
-            # instead of forcing English.
         },
 
         "searchSpec": {
@@ -187,15 +208,24 @@ def ask_vertex(query, preamble, track=None):
 
     answer_obj = data.get("answer", {})
 
-    answer_text = answer_obj.get("answerText", "").strip()
+    answer_text = answer_obj.get(
+        "answerText",
+        ""
+    ).strip()
 
-    references = answer_obj.get("references", [])
+    references = answer_obj.get(
+        "references",
+        []
+    )
 
     citations = []
 
     for ref in references[:5]:
 
-        info = ref.get("unstructuredDocumentInfo", {})
+        info = ref.get(
+            "unstructuredDocumentInfo",
+            {}
+        )
 
         title = (
             info.get("title")
@@ -214,18 +244,21 @@ def ask_vertex(query, preamble, track=None):
     }
 
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # ROUTES
-# ──────────────────────────────────────────────────────────────────────────────
-
+# ─────────────────────────────────────────────────────────────
 
 @app.route("/", methods=["GET"])
 def index():
-    return send_from_directory("static", "index.html")
+    return send_from_directory(
+        "static",
+        "index.html"
+    )
 
 
 @app.route("/health", methods=["GET"])
 def health():
+
     return jsonify({
         "status": "ok"
     })
@@ -234,11 +267,19 @@ def health():
 @app.route("/chat", methods=["POST"])
 def chat():
 
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(
+        silent=True
+    ) or {}
 
-    message = data.get("message", "").strip()
+    message = data.get(
+        "message",
+        ""
+    ).strip()
 
-    session_id = data.get("session_id", "default")
+    session_id = data.get(
+        "session_id",
+        "default"
+    )
 
     ui_track = data.get("track")
 
@@ -249,7 +290,11 @@ def chat():
 
     session = get_session(session_id)
 
-    language = "it" if is_italian(message) else "en"
+    language = (
+        "it"
+        if is_italian(message)
+        else "en"
+    )
 
     # UI track selection has priority
     if ui_track in ("1", "2", "3"):
@@ -265,9 +310,12 @@ def chat():
         track_name = TRACKS[detected_track]
 
         reply = (
-            f"Track {detected_track} selezionato: {track_name}."
+            f"Track {detected_track} selezionato: "
+            f"{track_name}."
             if language == "it"
-            else f"Track {detected_track} selected: {track_name}."
+            else
+            f"Track {detected_track} selected: "
+            f"{track_name}."
         )
 
         return jsonify({
@@ -312,9 +360,12 @@ def chat():
     if not answer:
 
         answer = (
-            "Non ho trovato informazioni rilevanti nei documenti della conferenza."
+            "Non ho trovato informazioni rilevanti "
+            "nei documenti della conferenza."
             if language == "it"
-            else "I could not find relevant information in the conference documents."
+            else
+            "I could not find relevant information "
+            "in the conference documents."
         )
 
     return jsonify({
@@ -328,9 +379,14 @@ def chat():
 @app.route("/chat/reset", methods=["POST"])
 def reset_chat():
 
-    data = request.get_json(silent=True) or {}
+    data = request.get_json(
+        silent=True
+    ) or {}
 
-    session_id = data.get("session_id", "default")
+    session_id = data.get(
+        "session_id",
+        "default"
+    )
 
     if session_id in sessions:
         del sessions[session_id]
@@ -340,100 +396,18 @@ def reset_chat():
     })
 
 
-# ──────────────────────────────────────────────────────────────────────────────
+# ─────────────────────────────────────────────────────────────
 # MAIN
-# ──────────────────────────────────────────────────────────────────────────────
-
+# ─────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
 
-    port = int(os.environ.get("PORT", 8080))
+    port = int(
+        os.environ.get("PORT", 8080)
+    )
 
     app.run(
         host="0.0.0.0",
         port=port,
         debug=False,
     )
-```
-
-# Main Improvements Applied
-
-## Fixed Problems
-
-### Removed harmful query rewriting
-
-The previous version altered user queries aggressively, degrading Vertex semantic retrieval.
-
-### Removed manual Italian→English replacements
-
-Those replacements were damaging retrieval quality and confusing the search engine.
-
-### Removed conversation history pollution
-
-Conversation history was likely contaminating retrieval relevance.
-
-### Added REAL track filtering
-
-The old version stored track state but did not truly filter datastore retrieval.
-
-Now the bot actually filters by:
-
-```python
-uri: ANY("track1")
-```
-
-etc.
-
-### Reduced prompt complexity
-
-The old prompt was too verbose and over-constrained Vertex generation.
-
-### Fixed language inconsistency
-
-The old code forced:
-
-```python
-answerLanguageCode = "en"
-```
-
-while simultaneously asking for Italian responses.
-
-Now language follows prompt naturally.
-
-### Improved citations handling
-
-Now citations are cleaner and less noisy.
-
----
-
-# Expected Improvements
-
-You should now get:
-
-* much closer behaviour to native Vertex AI Search UI
-* more accurate semantic retrieval
-* better short-query handling (LLM, BIM, VR, etc.)
-* better Track-specific answers
-* less hallucination
-* less irrelevant expansion
-* cleaner multilingual behaviour
-* more stable responses
-
----
-
-# Deployment
-
-After replacing `main.py`:
-
-```bash
-gcloud run deploy visione-conference-bot \
---source . \
---region europe-west8 \
---allow-unauthenticated
-```
-
-Then test again on:
-
-```text
-https://visione-conference-bot-fovnlhypea-oc.a.run.app
-```
