@@ -29,14 +29,11 @@ DATASTORE_ID = os.environ.get(
     "visionedatastore_1779872407393"
 )
 
-# IMPORTANT FIX FOR GLOBAL DATASTORE
 if GCP_LOCATION == "global":
     api_host = "discoveryengine.googleapis.com"
 else:
     api_host = f"{GCP_LOCATION}-discoveryengine.googleapis.com"
 
-# IMPORTANT:
-# USING SEARCH API INSTEAD OF ANSWER API
 ENDPOINT = (
     f"https://{api_host}/v1/projects/"
     f"{GCP_PROJECT_ID}/locations/{GCP_LOCATION}/collections/default_collection/"
@@ -215,7 +212,7 @@ def build_preamble(language, track=None, contribution_ref=None):
         "When listing papers always include "
         "title and authors if available. "
 
-        "If the information is not available "
+        "If information is not available "
         "inside the conference documents, "
         "say so briefly. "
 
@@ -247,10 +244,6 @@ def ask_vertex(query, history, preamble, track=None):
             }
         }
     }
-
-    # IMPORTANT:
-    # TRACK FILTER DISABLED FOR DEBUGGING
-    # Re-enable later if retrieval works correctly
 
     response = requests.post(
         ENDPOINT,
@@ -284,10 +277,44 @@ def ask_vertex(query, history, preamble, track=None):
             {}
         )
 
-        title = (
+        raw_title = (
             derived.get("title")
             or doc.get("id", "Untitled")
         )
+
+        title = raw_title
+
+        # CLEAN TRACK PREFIX
+        title = re.sub(
+            r"^track[123]",
+            "",
+            title,
+            flags=re.IGNORECASE
+        )
+
+        # REMOVE PDF
+        title = re.sub(
+            r"\.pdf$",
+            "",
+            title,
+            flags=re.IGNORECASE
+        )
+
+        # CLEAN SYMBOLS
+        title = re.sub(
+            r"[_\-]+",
+            " ",
+            title
+        )
+
+        # SPLIT CAMEL CASE
+        title = re.sub(
+            r"([a-z])([A-Z])",
+            r"\1 \2",
+            title
+        )
+
+        title = title.strip()
 
         snippets = derived.get(
             "snippets",
@@ -303,9 +330,20 @@ def ask_vertex(query, history, preamble, track=None):
                 ""
             )
 
-        summaries.append(
-            f"• {title}\n{text}"
-        )
+            # REMOVE HTML TAGS
+            text = re.sub(
+                r"<[^>]+>",
+                "",
+                text
+            )
+
+        if len(text) > 220:
+            text = text[:220] + "..."
+
+        summaries.append({
+            "title": title,
+            "snippet": text
+        })
 
         uri = derived.get(
             "link",
@@ -317,9 +355,18 @@ def ask_vertex(query, history, preamble, track=None):
             if f"track{t}" in uri.lower():
                 source_track = t
 
+    formatted = []
+
+    for item in summaries:
+
+        formatted.append(
+            f"• {item['title']}\n"
+            f"{item['snippet']}"
+        )
+
     final_answer = (
         "Relevant conference contributions found:\n\n"
-        + "\n\n".join(summaries)
+        + "\n\n".join(formatted)
     )
 
     return final_answer, source_track
@@ -379,11 +426,9 @@ def chat():
         else "en"
     )
 
-    # UI track selection
     if ui_track in ("1", "2", "3"):
         session["track"] = ui_track
 
-    # Typed track selection
     detected_track = detect_track(message)
 
     if detected_track:
@@ -419,14 +464,12 @@ def chat():
         string.punctuation + " "
     ).lower()
 
-    # Expand short queries
     if len(query) <= 5 and not any(c.isspace() for c in query):
 
         query = (
             f"conference papers and contributions about {query}"
         )
 
-    # Italian semantic normalization
     it_en = {
         "pausa caffè": "coffee break",
         "pausa caffe": "coffee break",
