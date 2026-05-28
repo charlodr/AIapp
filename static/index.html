@@ -171,18 +171,42 @@ const TRACKS = {
 };
 
 const KEYWORDS = {
-  common: ['LLM','RAG','NLP','Generative AI','Diffusion Models','Digital Twin',
-    'Neural Networks','GANs','NeRF','Extended Reality','AI Ethics',
-    'Human-AI Collaboration','Multimodal AI','Data-driven','Fine-tuning'],
-  t1: ['BIM','Parametric Design','Generative Design','Computational Creativity',
-    'Morphological Analysis','Style Transfer','Form-finding','Architectural Design',
-    'Urban Design','Sustainable Design','Virtual Prototyping','Shared Authorship'],
-  t2: ['Digital Heritage','Photogrammetry','Scan-to-BIM','HBIM','Digital Survey',
-    'Heritage Conservation','Digital Restoration','Laser Scanning',
-    'Museum Studies','Linked Open Data','Predictive Conservation'],
-  t3: ['Design Education','Pedagogy','Adaptive Learning','Gamification',
-    'Immersive Learning','Learning Analytics','Intelligent Tutoring',
-    'Student Modeling','Academic Integrity','Collaborative Virtual Environments']
+  common: [
+    'LLM','RAG','NLP','Generative AI','Diffusion Models','GANs','NeRF',
+    'Neural Networks','Multimodal AI','Data-driven','Fine-tuning',
+    'AI Ethics','AI Fairness and Bias Mitigation','AI Literacy',
+    'Human-AI Collaboration','Human-AI Co-creation','Extended Intelligence',
+    'Hybrid Cognitive Ecosystems','Interdisciplinary Research',
+    'Image Generation','Video Generation','3D Models Generation',
+    'Speculative Design','World Models'
+  ],
+  t1: [
+    'BIM','Parametric Design','Generative Design','Computational Creativity',
+    'Computational Aesthetics','Morphological Analysis','Form-finding',
+    'Architectural Design','Urban Design','AI in Urban Design',
+    'Shared Authorship','Algorithmic Prototyping','Virtual Prototyping',
+    'Style Transfer','AI-powered BIM','Architectural Representation',
+    'AI for Sustainable Design','Design Space Exploration',
+    'Posthuman Cartography','Artistic Intention','Generative UI'
+  ],
+  t2: [
+    'Digital Heritage','Digital Survey','AI-enhanced Photogrammetry',
+    'Geometric Analysis','Scan-to-BIM','Scan-to-HBIM','HBIM',
+    'Historical Document Analysis','Digital Reconstruction','Digital Restoration',
+    'Dynamic Storytelling','Digital Archives','Semantic Enrichment',
+    'Knowledge Representation','Linked Open Data','Predictive Conservation',
+    'AI-assisted Heritage Conservation','Interactive Storytelling',
+    'Immersive Experiences','Cultural Heritage','Archive Valorisation'
+  ],
+  t3: [
+    'AI in Architecture and Design Education','Architectural Pedagogy',
+    'Design Education','AI-mediated Learning','Adaptive Learning',
+    'Immersive Learning','Gamification','Active Engagement',
+    'Collaborative Virtual Environments','Learning Analytics',
+    'Intelligent Tutoring','Student Modeling','Academic Integrity',
+    'AI Literacy','Speculative Design','Virtual Reality co-design',
+    'Intangible Cultural Heritage','Serious Games'
+  ]
 };
 
 let track = 'all', loading = false;
@@ -281,22 +305,11 @@ function quickAsk(q) {
 
 function formatText(text) {
   return text
-    // bullet points
     .replace(/^\* (.+)$/gm, '<li>$1</li>')
-
-    // numbered lists
     .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
-
-    // wrap consecutive li items
     .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
-
-    // bold
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-
-    // italics
     .replace(/_([^_]+)_/g, '<em>$1</em>')
-
-    // line breaks
     .replace(/\n/g, '<br>');
 }
 
