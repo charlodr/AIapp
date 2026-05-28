@@ -231,8 +231,6 @@ def build_preamble(language, track=None):
         "complete and detailed answers including titles and authors. "
         "3. When listing papers always include title and authors. "
         "4. If information is not in the documents, say so briefly. "
-        "Do not use markdown bullet syntax (* or -). "
-        "Use plain sentences or HTML-safe formatting only. "
         f"{track_instr}"
         f"{lang_instr}"
     )
