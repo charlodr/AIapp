@@ -406,6 +406,21 @@ def ask_vertex(query, track=None, language="en"):
             effective_track = m.group(1)
         return format_papers_static(effective_track, language)
 
+    # Detect schedule/speaker timing queries → use ConferenceDay.pdf
+    elif any(t in lower_q for t in [
+        "what time", "when does", "when is", "what slot", "time slot",
+        "speaking", "speak", "speaker", "pitch", "pitching", "pitches",
+        "presentation", "presenting", "presents", "talk", "talking",
+        "session time", "scheduled", "on stage", "takes the floor",
+        "a che ora", "quando parla", "quando presenta", "orario di",
+        "intervento di", "presentazione di", "pitch di", "slot di",
+    ]):
+        query = (
+            f"Using the ConferenceDay.pdf cronoprogram, what is the scheduled time "
+            f"for the following: {query}? "
+            f"Look for the name or title in the session schedule and return the exact time slot."
+        )
+
     # Enrich very short queries with conference context
     elif len(query.strip().split()) <= 3:
         query = (
