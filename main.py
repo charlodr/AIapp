@@ -291,7 +291,6 @@ def build_preamble(language, track=None):
         "ConferenceDay.pdf (conference programme — use ONLY for schedule, session times, "
         "keynote slots and pitch timings), "
         "ScientificCommittee.pdf (scientific committee members and affiliations), "
-<<<<<<< HEAD
         "track1_*.pdf (full academic papers for Track 1 — AI for Representation and Design), "
         "track2_*.pdf (full academic papers for Track 2 — AI for Heritage Conservation), "
         "track3_*.pdf (full academic papers for Track 3 — AI for Education and Learning). "
@@ -299,24 +298,6 @@ def build_preamble(language, track=None):
         "For schedule and timing questions use ConferenceDay.pdf. "
         "Provide complete detailed answers about papers and research. "
         "If information is not in the documents say so briefly. "
-=======
-        "OrganizingCommittee.pdf (organizing committee members), "
-        "Logistics.pdf (venue address, social dinner at Al Pero, contact email), "
-        "track1_*.pdf (academic papers for Track 1), "
-        "track2_*.pdf (academic papers for Track 2), "
-        "track3_*.pdf (academic papers for Track 3). "
-        "IMPORTANT RESPONSE RULES: "
-        "1. For logistical questions (coffee break, lunch, schedule, venue, social dinner, "
-        "wifi, address, timing, registration, opening, closing, awards) — answer with ONLY "
-        "the essential facts in 1-3 sentences maximum. "
-        "NEVER mention papers, contributions or research topics in logistical answers. "
-        "NEVER add sentences like 'there are no papers about this topic'. "
-        "For contact information always refer to the Organizing Committee at visioneuid@gmail.com. "
-        "2. For questions about papers, contributions, authors or research topics — provide "
-        "complete and detailed answers including titles and authors. "
-        "3. When listing papers always include title and authors. "
-        "4. If information is not in the documents, say so briefly. "
->>>>>>> 7144011 (hardcoded papers list from Excel)
         f"{track_instr}"
         f"{lang_instr}"
     )
