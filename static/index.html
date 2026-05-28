@@ -281,9 +281,22 @@ function quickAsk(q) {
 
 function formatText(text) {
   return text
+    // bullet points
+    .replace(/^\* (.+)$/gm, '<li>$1</li>')
+
+    // numbered lists
+    .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+
+    // wrap consecutive li items
+    .replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>')
+
+    // bold
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*([^*]+)\*/g, '<em>$1</em>')
+
+    // italics
     .replace(/_([^_]+)_/g, '<em>$1</em>')
+
+    // line breaks
     .replace(/\n/g, '<br>');
 }
 
