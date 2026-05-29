@@ -373,7 +373,27 @@ function showTrackDescription(t) {
     </div>
   `;
 }*/
-function renderPapers(papers) {
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+function linkPapers(answer, papers) {
+  if (!papers || papers.length === 0) return answer;
+
+  papers.forEach(p => {
+    const icon = ` 🔗`;
+
+    const regex = new RegExp(escapeRegex(p.title), "g");
+
+    answer = answer.replace(
+      regex,
+      `<a href="${p.url}" target="_blank">${p.title}</a> ${icon}`
+    );
+  });
+
+  return answer;
+}
+  
+/*function renderPapers(papers) {
   if (!papers || papers.length === 0) return "";
 
   return `
@@ -421,7 +441,7 @@ function renderPapers(papers) {
       `).join('')}
     </div>
   `;
-}
+}*/
   
 async function sendMessage() {
   const txt = inp.value.trim();
@@ -441,12 +461,16 @@ async function sendMessage() {
     const data = await r.json();
     hideTyping();
     //addMsg('bot', formatText(data.answer || 'No response.')); //29.05.2026 VB
+
+    let answer = formatText(data.answer || 'No response.');
+    answer = linkPapers(answer, data.papers || []);
+    addMsg('bot', answer);
     
-    addMsg(
+    /*addMsg(
       'bot',
       formatText(data.answer || 'No response.') +
       (data.show_papers ? renderPapers(data.papers) : '')
-    );
+    );*/
     
     if (data.track && data.track !== track) track = data.track;
     // Update language based on what the server detected
