@@ -383,7 +383,7 @@ function renderPapers(papers) {
           
           <div>
             <span style="color:#e8e8f0">
-              📄 <strong>${p.title}</strong>
+               <strong>${p.title}</strong>
             </span>
 
             ${
@@ -399,7 +399,7 @@ function renderPapers(papers) {
                       padding:2px 8px;
                       border-radius:10px;
                     ">
-                    Paper &gt;
+                    Paper 📄;
                  </a>`
               : ''
             }
@@ -445,7 +445,7 @@ async function sendMessage() {
     addMsg(
       'bot',
       formatText(data.answer || 'No response.') +
-      renderPapers(data.papers)
+      (data.show_papers ? renderPapers(data.papers) : '')
     );
     
     if (data.track && data.track !== track) track = data.track;
