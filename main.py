@@ -1,6 +1,7 @@
 import os
 import re
 import requests
+import csv
 
 from flask import Flask, request, jsonify, send_from_directory
 
@@ -12,6 +13,8 @@ app = Flask(__name__, static_folder="static")
 GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "chatbot-visione-497608")
 GCP_LOCATION   = os.environ.get("GCP_LOCATION", "global")
 DATASTORE_ID   = os.environ.get("DATASTORE_ID", "visionedatastore_1779872407393")
+
+paper_map = {}
 
 SERVING_CONFIG = (
     f"projects/{GCP_PROJECT_ID}/locations/{GCP_LOCATION}/"
@@ -161,7 +164,42 @@ def check_logistics(text, language):
             return LOGISTICS[key][language]
     return None
 
+# ─────────────────────────────────────────────────────────────
+# PAPERS MAP
+# ─────────────────────────────────────────────────────────────
 
+def load_paper_map(csv_path="matched_papers.csv"):
+    global paper_map
+
+    with open(csv_path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+
+        for row in reader:
+            internal = row["internal_file"].strip()
+            public   = row["public_file"].strip()
+
+            if public:
+                # convert to actual GCS URL
+                public_url = f"https://storage.googleapis.com/visione-public-papers/{public.replace(' ', '%20')}"
+
+                paper_map[internal] = public_url
+
+load_paper_map()
+
+def inject_pdf_links(text):
+    """
+    Replace internal filenames with clickable public links.
+    """
+
+    if not text:
+        return text
+
+    for internal_file, url in paper_map.items():
+        pattern = re.escape(internal_file)
+        link = f'<a href="{url}" target="_blank">📄 paper</a>'
+        text = re.sub(pattern, link, text)
+    return text
+    
 # ─────────────────────────────────────────────────────────────
 # SESSION
 # ─────────────────────────────────────────────────────────────
@@ -530,7 +568,8 @@ def chat():
             else "I couldn't find relevant information in the conference documents. Try rephrasing."
         )
     else:
-        reply = answer
+        #reply = answer
+        reply = inject_pdf_links(answer)
 
     session["history"].append({"user": message, "assistant": reply})
     session["history"] = session["history"][-MAX_HISTORY:]
