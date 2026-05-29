@@ -393,6 +393,7 @@ function linkPapers(answer, papers) {
 
   return answer;
 }
+  
 function renderWithCitations(answer, citations) {
   if (!citations || citations.length === 0) return answer;
 
@@ -415,6 +416,22 @@ function renderWithCitations(answer, citations) {
   });
 
   return result;
+}
+function linkPapers(answer, papers) {
+  if (!papers?.length) return answer;
+
+  papers.forEach(p => {
+    const icon = ` <a href="${p.url}" target="_blank">🔗</a>`;
+
+    const escaped = escapeRegex(p.title);
+    const regex = new RegExp(escaped, "g");
+
+    answer = answer.replace(regex, match => {
+      return `${match}${icon}`;
+    });
+  });
+
+  return answer;
 }
 /*function renderPapers(papers) {
   if (!papers || papers.length === 0) return "";
@@ -489,11 +506,14 @@ async function sendMessage() {
     answer = linkPapers(answer, data.papers || []);
     addMsg('bot', answer);*/
     
-    const html = renderWithCitations(
+    /*const html = renderWithCitations(
       formatText(data.answer || 'No response.'),
       data.citations
-    );
+    );*/
     
+
+    let html = formatText(data.answer || 'No response.');
+    html = linkPapers(html, data.papers || []);
     addMsg('bot', html);
     
     
