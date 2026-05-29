@@ -198,18 +198,22 @@ load_paper_registry()
 def find_paper_mentions(text):
     results = []
     lower_text = text.lower()
-
     titles = list(paper_registry.keys())
 
     matches = process.extract(
         lower_text,
         titles,
         limit=5,
-        score_cutoff=80
+        score_cutoff=70
     )
 
     for match, score, _ in matches:
-        results.append(paper_registry[match])
+        paper = paper_registry[match]
+        results.append({
+            "title": paper["title"],
+            "track": paper["track"],
+            "url": paper["url"]
+        })
 
     return results
 
@@ -605,15 +609,26 @@ def chat():
             "article", "articles", "research", "study", "studies",
             "track", "author", "abstract", "pdf",
             "paper >", "publication",
-            "contributo", "contributi", "ricerca", "articolo",
+            "contributo", "contributi", "ricerca", "articolo", "articoli",
             "paper di", "autori"
         ]
-    
-        # Only attach paper cards for research-related questions
-        if any(t in message.lower() for t in PAPER_QUERY_TRIGGERS):
-            papers = find_paper_mentions(answer)
-        else:
+        
+        papers = find_paper_mentions(reply)
+        
+        if not papers:
             papers = []
+        else:
+            for p in papers:
+                if p["title"] in reply:
+                    reply = reply.replace(
+                        p["title"],
+                        f'<a href="{p["url"]}" target="_blank">{p["title"]}</a>'
+                    )
+        # Only attach paper cards for research-related questions
+        #if any(t in message.lower() for t in PAPER_QUERY_TRIGGERS):
+        #    papers = find_paper_mentions(answer)
+        #else:
+        #    papers = []
 
     session["history"].append({"user": message, "assistant": reply})
     session["history"] = session["history"][-MAX_HISTORY:]
