@@ -376,17 +376,18 @@ function showTrackDescription(t) {
 function escapeRegex(str) {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
 function linkPapers(answer, papers) {
   if (!papers || papers.length === 0) return answer;
 
   papers.forEach(p => {
-    const icon = ` 🔗`;
+    const icon = ` <a href="${p.url}" target="_blank" style="text-decoration:none;">🔗</a>`;
 
     const regex = new RegExp(escapeRegex(p.title), "g");
 
     answer = answer.replace(
       regex,
-      `<a href="${p.url}" target="_blank">${p.title}</a> ${icon}`
+      `${p.title}${icon}`
     );
   });
 
