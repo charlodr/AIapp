@@ -2,6 +2,8 @@ import os
 import re
 import requests
 import csv
+import pandas as pd
+from rapidfuzz import process
 
 from flask import Flask, request, jsonify, send_from_directory
 
@@ -14,7 +16,9 @@ GCP_PROJECT_ID = os.environ.get("GCP_PROJECT_ID", "chatbot-visione-497608")
 GCP_LOCATION   = os.environ.get("GCP_LOCATION", "global")
 DATASTORE_ID   = os.environ.get("DATASTORE_ID", "visionedatastore_1779872407393")
 
-paper_map = {}
+BUCKET_BASE = "https://storage.googleapis.com/visione-bucket-public"
+
+paper_registry = {}
 
 SERVING_CONFIG = (
     f"projects/{GCP_PROJECT_ID}/locations/{GCP_LOCATION}/"
@@ -168,23 +172,46 @@ def check_logistics(text, language):
 # PAPERS MAP
 # ─────────────────────────────────────────────────────────────
 
-def load_paper_map(csv_path="matched_papers.csv"):
-    global paper_map
+def load_paper_registry(csv_path="matched_papers.csv"):
+    global paper_registry
 
-    with open(csv_path, newline="", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
+    df = pd.read_csv(csv_path)
 
-        for row in reader:
-            internal = row["internal_file"].strip()
-            public   = row["public_file"].strip()
+    for _, row in df.iterrows():
+        title = str(row["title"]).strip()
+        track = str(row.get("track", "")).strip()
+        file = str(row["public_file"]).strip()
 
-            if public:
-                # convert to actual GCS URL
-                public_url = f"https://storage.googleapis.com/visione-public-papers/{public.replace(' ', '%20')}"
+        if not file:
+            continue
 
-                paper_map[internal] = public_url
+        url = f"{BUCKET_BASE}/{file.replace(' ', '%20')}"
 
-load_paper_map()
+        paper_registry[title.lower()] = {
+            "title": title,
+            "track": track,
+            "url": url
+        }
+        
+load_paper_registry()
+
+def find_paper_mentions(text):
+    results = []
+    lower_text = text.lower()
+
+    titles = list(paper_registry.keys())
+
+    matches = process.extract(
+        lower_text,
+        titles,
+        limit=5,
+        score_cutoff=80
+    )
+
+    for match, score, _ in matches:
+        results.append(paper_registry[match])
+
+    return results
 
 def inject_pdf_links(text):
     """
@@ -568,8 +595,8 @@ def chat():
             else "I couldn't find relevant information in the conference documents. Try rephrasing."
         )
     else:
-        #reply = answer
-        reply = inject_pdf_links(answer)
+        reply = answer
+        papers = find_paper_mentions(answer)
 
     session["history"].append({"user": message, "assistant": reply})
     session["history"] = session["history"][-MAX_HISTORY:]
@@ -578,6 +605,7 @@ def chat():
         "answer": reply,
         "track": session.get("track"),
         "language": language,
+        "papers": papers
     })
 
 
