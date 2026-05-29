@@ -203,7 +203,7 @@ def find_paper_mentions(text):
     matches = process.extract(
         lower_text,
         titles,
-        limit=5,
+        limit=10,
         score_cutoff=70
     )
 
