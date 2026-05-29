@@ -600,7 +600,20 @@ def chat():
         )
     else:
         reply = answer
-        papers = find_paper_mentions(answer)
+        PAPER_QUERY_TRIGGERS = [
+            "paper", "papers", "contribution", "contributions",
+            "article", "articles", "research", "study", "studies",
+            "track", "author", "abstract", "pdf",
+            "paper >", "publication",
+            "contributo", "contributi", "ricerca", "articolo",
+            "paper di", "autori"
+        ]
+    
+        # Only attach paper cards for research-related questions
+        if any(t in message.lower() for t in PAPER_QUERY_TRIGGERS):
+            papers = find_paper_mentions(answer)
+        else:
+            papers = []
 
     session["history"].append({"user": message, "assistant": reply})
     session["history"] = session["history"][-MAX_HISTORY:]
