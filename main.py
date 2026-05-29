@@ -175,7 +175,7 @@ def check_logistics(text, language):
 def load_paper_registry(csv_path="matched_papers.csv"):
     global paper_registry
 
-    df = pd.read_csv(csv_path)
+    df = pd.read_csv(csv_path, sep=None, engine="python")
 
     for _, row in df.iterrows():
         title = str(row["title"]).strip()
