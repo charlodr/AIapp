@@ -393,7 +393,29 @@ function linkPapers(answer, papers) {
 
   return answer;
 }
-  
+function renderWithCitations(answer, citations) {
+  if (!citations || citations.length === 0) return answer;
+
+  // sort backwards so offsets don't break
+  citations.sort((a, b) => b.start - a.start);
+
+  let result = answer;
+
+  citations.forEach(c => {
+    const before = result.slice(0, c.end);
+    const target = result.slice(c.start, c.end);
+    const after = result.slice(c.end);
+
+    result =
+      before +
+      `<a href="${c.url}" target="_blank" style="text-decoration:none">
+        ${target} 🔗
+      </a>` +
+      after;
+  });
+
+  return result;
+}
 /*function renderPapers(papers) {
   if (!papers || papers.length === 0) return "";
 
@@ -463,15 +485,17 @@ async function sendMessage() {
     hideTyping();
     //addMsg('bot', formatText(data.answer || 'No response.')); //29.05.2026 VB
 
-    let answer = formatText(data.answer || 'No response.');
+    /*let answer = formatText(data.answer || 'No response.');
     answer = linkPapers(answer, data.papers || []);
-    addMsg('bot', answer);
+    addMsg('bot', answer);*/
     
-    /*addMsg(
-      'bot',
-      formatText(data.answer || 'No response.') +
-      (data.show_papers ? renderPapers(data.papers) : '')
-    );*/
+    const html = renderWithCitations(
+      formatText(data.answer || 'No response.'),
+      data.citations
+    );
+    
+    addMsg('bot', html);
+    
     
     if (data.track && data.track !== track) track = data.track;
     // Update language based on what the server detected
