@@ -4,6 +4,7 @@ import requests
 import csv
 import pandas as pd
 from rapidfuzz import process
+from rapidfuzz import fuzz
 
 from flask import Flask, request, jsonify, send_from_directory
 
@@ -195,27 +196,96 @@ def load_paper_registry(csv_path="matched_papers.csv"):
         
 load_paper_registry()
 
-def find_paper_mentions(text):
-    results = []
-    lower_text = text.lower()
-    titles = list(paper_registry.keys())
+def normalize(text):
+    text = text.lower()
+    text = re.sub(r'[^a-z0-9 ]+', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
+    return text
 
-    matches = process.extract(
-        lower_text,
-        titles,
-        limit=10,
-        score_cutoff=70
-    )
 
-    for match, score, _ in matches:
-        paper = paper_registry[match]
-        results.append({
-            "title": paper["title"],
-            "track": paper["track"],
-            "url": paper["url"]
-        })
+def find_citations(text):
+    citations = []
+    used = set()
 
-    return results
+    text_norm = normalize(text)
+
+    registry = [
+        {
+            "title": p["title"],
+            "url": p["url"],
+            "track": p["track"],
+            "norm": normalize(p["title"])
+        }
+        for p in paper_registry.values()
+    ]
+
+    for paper in registry:
+
+        # -----------------------------
+        # 1. exact substring match
+        # -----------------------------
+        match_index = text_norm.find(paper["norm"])
+
+        if match_index != -1:
+            if paper["title"] not in used:
+                used.add(paper["title"])
+
+                citations.append({
+                    "id": paper["title"],
+                    "title": paper["title"],
+                    "url": paper["url"],
+                    "start": match_index,
+                    "end": match_index + len(paper["norm"])
+                })
+            continue
+
+        # -----------------------------
+        # 2. fuzzy fallback per sentence
+        # -----------------------------
+        sentences = re.split(r'(?<=[.!?])\s+', text_norm)
+
+        offset = 0
+        for sent in sentences:
+            score = fuzz.token_set_ratio(paper["norm"], sent)
+
+            if score >= 90 and paper["title"] not in used:
+                used.add(paper["title"])
+
+                start = text_norm.find(sent)
+
+                citations.append({
+                    "id": paper["title"],
+                    "title": paper["title"],
+                    "url": paper["url"],
+                    "start": start,
+                    "end": start + len(sent)
+                })
+
+            offset += len(sent)
+
+    return citations
+    
+#def find_paper_mentions(text):
+#    results = []
+#    lower_text = text.lower()
+#    titles = list(paper_registry.keys())
+
+#    matches = process.extract(
+#        lower_text,
+#        titles,
+#        limit=10,
+#        score_cutoff=70
+#    )
+
+#    for match, score, _ in matches:
+#        paper = paper_registry[match]
+#        results.append({
+#            "title": paper["title"],
+#            "track": paper["track"],
+#            "url": paper["url"]
+#        })
+
+#    return results
 
 def inject_pdf_links(text):
     """
@@ -604,40 +674,17 @@ def chat():
         )
     else:
         reply = answer
-        PAPER_QUERY_TRIGGERS = [
-            "paper", "papers", "contribution", "contributions",
-            "article", "articles", "research", "study", "studies",
-            "track", "author", "abstract", "pdf",
-            "paper >", "publication",
-            "contributo", "contributi", "ricerca", "articolo", "articoli",
-            "paper di", "autori"
-        ]
-        
-        papers = find_paper_mentions(reply)
-        
-        if not papers:
-            papers = []
-        else:
-            for p in papers:
-                if p["title"] in reply:
-                    reply = reply.replace(
-                        p["title"],
-                        f'<a href="{p["url"]}" target="_blank">{p["title"]}</a>'
-                    )
-        # Only attach paper cards for research-related questions
-        #if any(t in message.lower() for t in PAPER_QUERY_TRIGGERS):
-        #    papers = find_paper_mentions(answer)
-        #else:
-        #    papers = []
+        #papers = find_paper_mentions(reply)
+        citations = find_citations(reply)
 
     session["history"].append({"user": message, "assistant": reply})
     session["history"] = session["history"][-MAX_HISTORY:]
 
     return jsonify({
         "answer": reply,
+        "citations": citations,
         "track": session.get("track"),
-        "language": language,
-        "papers": papers
+        "language": language
     })
 
 
