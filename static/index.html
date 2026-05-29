@@ -357,6 +357,23 @@ function showTrackDescription(t) {
   addMsg('bot', '<span class="badge">TRACK ' + t + '</span><br><strong>' + trackName + '</strong><br><br>' + desc);
 }
 
+function renderPapers(papers) {
+  if (!papers || papers.length === 0) return "";
+
+  return `
+    <div style="margin-top:10px">
+      ${papers.map(p => `
+        <a href="${p.url}" target="_blank" class="paper-link">
+          📄 ${p.title}
+        </a><br>
+        <span style="font-size:11px;color:#888">
+          ${p.authors}
+        </span><br><br>
+      `).join('')}
+    </div>
+  `;
+}
+  
 async function sendMessage() {
   const txt = inp.value.trim();
   if (!txt || loading) return;
@@ -374,7 +391,14 @@ async function sendMessage() {
     });
     const data = await r.json();
     hideTyping();
-    addMsg('bot', formatText(data.answer || 'No response.'));
+    //addMsg('bot', formatText(data.answer || 'No response.')); //29.05.2026 VB
+    
+    addMsg(
+      'bot',
+      formatText(data.answer || 'No response.') +
+      renderPapers(data.papers)
+    );
+    
     if (data.track && data.track !== track) track = data.track;
     // Update language based on what the server detected
     if (data.language) userLang = data.language;
