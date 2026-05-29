@@ -357,7 +357,7 @@ function showTrackDescription(t) {
   addMsg('bot', '<span class="badge">TRACK ' + t + '</span><br><strong>' + trackName + '</strong><br><br>' + desc);
 }
 
-function renderPapers(papers) {
+/*function renderPapers(papers) {
   if (!papers || papers.length === 0) return "";
 
   return `
@@ -369,6 +369,55 @@ function renderPapers(papers) {
         <span style="font-size:11px;color:#888">
           ${p.authors}
         </span><br><br>
+      `).join('')}
+    </div>
+  `;
+}*/
+function renderPapers(papers) {
+  if (!papers || papers.length === 0) return "";
+
+  return `
+    <div style="margin-top:12px">
+      ${papers.map(p => `
+        <div style="margin-bottom:14px;line-height:1.5">
+          
+          <div>
+            <span style="color:#e8e8f0">
+              📄 <strong>${p.title}</strong>
+            </span>
+
+            ${
+              p.url
+              ? `<a href="${p.url}" 
+                    target="_blank"
+                    style="
+                      margin-left:8px;
+                      color:#a78bfa;
+                      text-decoration:none;
+                      font-size:12px;
+                      border:1px solid #3a3a55;
+                      padding:2px 8px;
+                      border-radius:10px;
+                    ">
+                    Paper &gt;
+                 </a>`
+              : ''
+            }
+          </div>
+
+          ${
+            p.authors
+            ? `<div style="
+                  font-size:11px;
+                  color:#8b8ba7;
+                  margin-top:3px;
+               ">
+                 ${p.authors}
+               </div>`
+            : ''
+          }
+
+        </div>
       `).join('')}
     </div>
   `;
